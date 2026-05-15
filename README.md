@@ -25,10 +25,8 @@
 - [Table of Contents](#table-of-contents)
 - [About 🚀](#about-)
 - [Features 💪](#features-)
-- [Prerequisites](#prerequisites)
-- [How to Install Git](#how-to-install-git)
-- [How to Install Node.js and npm](#how-to-install-nodejs-and-npm)
 - [Local development (monorepo)](#local-development-monorepo)
+- [Environment variables](#environment-variables)
 - [Contributing 👨‍💻](#contributing-)
 - [Contributors 🤝](#contributors-)
 - [License](#license)
@@ -50,76 +48,9 @@
 - Users can search for developers based on specific skills, making it easy to find issues with expertise in a particular technology or programming language.
 - This makes **`StorySparkAi`** a valuable resource for project managers, showcase and anyone looking to connect with skilled developers for collaboration or employment opportunities.
 
-<a id="prerequisites"></a>
-
-### Prerequisites
-
-- A GitHub account
-- Git installed on your local development environment
-- Node Package Manager (npm) installed on your local development environment
-
-### How to Install Git
-
-Git is a version control system that is used to manage the source code of your project.
-
-To install Git, follow these steps:
-
-1. Download and install Git from the [Official Website](https://git-scm.com/downloads)
-2. Open the terminal or command prompt on your local development environment
-3. Verify the installation of Git by running the following command:
-
-   ```bash
-   git --version
-   ```
-
-### How to Install Node.js and npm
-
-Node.js is a JavaScript runtime environment that allows you to run JavaScript code outside of a web browser. npm (Node Package Manager) is a package manager for JavaScript, essential for managing dependencies in Node.js projects. Here's how to install Node.js and npm:
-
-1. **Download Node.js:**
-
-   - Visit the [official Node.js website](https://nodejs.org/en/download/) and download the appropriate installer for your operating system (Windows, macOS, or Linux).
-   - Choose the LTS (Long Term Support) version for stable releases or the latest version for cutting-edge features.
-   - Follow the installation instructions provided by the installer.
-
-2. **Verify Node.js Installation:**
-
-   - After the installation is complete, open your terminal or command prompt.
-   - To verify that Node.js has been installed successfully, type the following command and press Enter:
-
-     ```
-     node -v
-     ```
-
-   - This command should display the version of Node.js installed on your system. If it does, Node.js installation was successful.
-
-3. **Verify npm Installation:**
-
-   - npm comes bundled with Node.js, so once Node.js is installed, npm is automatically installed as well.
-   - To confirm that npm is installed, in your terminal or command prompt, type:
-
-     ```
-     npm -v
-     ```
-
-   - Press Enter. This command should display the version of npm installed on your system. If it does, npm installation was successful.
-
-4. **Optional: Update npm (recommended):**
-
-   - It's recommended to keep npm up to date to access the latest features and bug fixes.
-   - To update npm to the latest version, type the following command and press Enter:
-
-     ```
-     npm install -g npm@latest
-     ```
-
-   - This command will update npm to the latest stable version globally (-g flag).
-
-By following these steps, you have successfully installed Node.js and npm on your system. You are now ready to start building JavaScript applications and managing dependencies with npm.
-
 ### Local development (monorepo)
 
-**Prerequisites:** Node.js **18.18+** (see `.nvmrc` for a suggested major version), npm **9+**, MongoDB URI for the API.
+**Prerequisites:** Node.js **18.18+**, npm **9+**, MongoDB URI for the API.
 
 1. **Clone the repository**
 
@@ -136,8 +67,10 @@ By following these steps, you have successfully installed Node.js and npm on you
 
 3. **Environment files**
 
-   - Copy `backend/.env.example` → `backend/.env` and fill all values your deployment needs (database, JWT secrets, AI keys, email, etc.).
+   - Copy `backend/.env.example` → `backend/.env` and fill in all values (see [Environment variables](#environment-variables)).
    - Copy `frontend/.env.example` → `frontend/.env` and set `VITE_BASE_URL` to your API base URL (e.g. `http://localhost:5000/api/v1` when the backend runs on port 5000). Optionally set `VITE_SOCKET_URL` for notifications.
+
+   > Never commit `backend/.env` or `frontend/.env`. Only `.env.example` files belong in git.
 
 4. **Run apps**
 
@@ -160,11 +93,50 @@ By following these steps, you have successfully installed Node.js and npm on you
 
 **Git:** Use a **single** repository root (one `.git` folder). Do not nest another `.git` inside `frontend/` or `backend/`.
 
+<a id="environment-variables"></a>
+
+### Environment variables
+
+After cloning, create your env files from the examples in the repo:
+
+```bash
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
+
+#### Backend (`backend/.env`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | MongoDB connection string (local or [Atlas](https://www.mongodb.com/cloud/atlas)) |
+| `PORT` | No | API port (default `5000`) |
+| `NODE_ENV` | No | `development` or `production` |
+| `CORS_ORIGINS` | No | Comma-separated frontend URLs (e.g. `http://localhost:4001`) |
+| `SALT_ROUNDS` | Yes | Bcrypt cost factor (e.g. `10`) |
+| `JWT_SECRET` | Yes | Access token signing secret |
+| `JWT_REFRESH_SECRET` | Yes | Refresh token signing secret |
+| `JWT_EXPIRES_IN` | Yes | Access token lifetime (e.g. `60d`) |
+| `JWT_REFRESH_EXPIRES_IN` | Yes | Refresh token lifetime (e.g. `120d`) |
+| `DEFAULT_ADMIN_PASSWORD` | Yes | Initial admin password on seed |
+| `OPEN_AI_KEY` | For OpenAI | [OpenAI API key](https://platform.openai.com/api-keys) |
+| `GEMINI_API_KEY` | For Gemini | [Google AI Studio key](https://aistudio.google.com/apikey) |
+| `UNSPLASH_KEY_API` | For images | [Unsplash Access Key](https://unsplash.com/developers) |
+| `UNSPLASH_KEY_API_SECRET` | For images | Unsplash secret |
+| `VERIFY_EMAIL` | For email | SMTP sender address |
+| `VERIFY_PASSWORD` | For email | SMTP password or app password |
+
+#### Frontend (`frontend/.env`)
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_BASE_URL` | Yes | API base URL, e.g. `http://localhost:5000/api/v1` |
+| `VITE_SOCKET_URL` | No | Socket.IO URL for notifications (optional) |
+
 ### Contributing workflow
 
 1. Fork the repository and clone your fork.
 2. Create a branch: `git checkout -b your-feature-branch`
-3. Install with `npm install` at the repo root, make changes, then `git add`, `git commit`, `git push`, and open a pull request.
+3. Install with `npm install` at the repo root, configure `.env` files, then `git add`, `git commit`, `git push`, and open a pull request.
 
 
 <a id="contributing"></a>
@@ -178,9 +150,57 @@ Contributions make the open source community such an amazing place to learn, ins
 
 ## Contributors 🤝
 
-<a href="https://github.com/ronisarkarexe/story-spark-ai/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=ronisarkarexe/story-spark-ai" />
-</a>
+<!-- CONTRIBUTORS:START -->
+Thanks to everyone who has helped build **Story Spark AI**. This section updates automatically when `contributors.json` changes. Merges entries from `contributors.json` with [GitHub contributors](https://github.com/ronisarkarexe/story-spark-ai/graphs/contributors).
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/ronisarkarexe">
+        <img src="https://github.com/ronisarkarexe.png" width="100" alt="ronisarkarexe" />
+        <br />
+        <sub><b>Roni Sarkar</b></sub>
+      </a>
+      <br />
+      <sub>Maintainer</sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/mzl2233">
+        <img src="https://github.com/mzl2233.png" width="100" alt="mzl2233" />
+        <br />
+        <sub><b>mzl2233</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/amrendrasharma1328-a11y">
+        <img src="https://github.com/amrendrasharma1328-a11y.png" width="100" alt="amrendrasharma1328-a11y" />
+        <br />
+        <sub><b>amrendrasharma1328-a11y</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <a href="https://github.com/Swetanegi05">
+        <img src="https://github.com/Swetanegi05.png" width="100" alt="Swetanegi05" />
+        <br />
+        <sub><b>Swetanegi05</b></sub>
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/rajdeep-yadav">
+        <img src="https://github.com/rajdeep-yadav.png" width="100" alt="rajdeep-yadav" />
+        <br />
+        <sub><b>Rajdeep</b></sub>
+      </a>
+    </td>
+    <td align="center">
+      <sub><b>P. Harshini Padmavathi</b></sub>
+    </td>
+  </tr>
+</table>
+
+<!-- CONTRIBUTORS:END -->
 
 <a id="license"></a>
 
