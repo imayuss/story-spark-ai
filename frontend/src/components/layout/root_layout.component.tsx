@@ -9,11 +9,12 @@ interface RootLayoutProps {
 
 const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
   const { pathname } = useLocation();
+  const hideHeader = pathname === "/login";
   const hideFooter = pathname === "/login" || pathname === "/signup";
 
   return (
     <div className="flex flex-col min-h-screen">
-      <NavListComponent />
+      {!hideHeader && <NavListComponent />}
       <div className="flex-grow">{children}</div>
       {!hideFooter && <FooterComponent />}
     </div>
