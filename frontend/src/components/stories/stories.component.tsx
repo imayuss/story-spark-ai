@@ -33,6 +33,7 @@ const StoriesComponent = () => {
   const [generateFreeModel] = useGenerateFreeModelMutation();
   const [selectedPrompt, setSelectedPrompt] = useState<string>("");
   const [selectedGenre, setSelectedGenre] = useState<string>("");
+  const [selectedLength, setSelectedLength] = useState<string>("medium");
   const [textareaValue, setTextareaValue] = useState<string>("");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -102,6 +103,10 @@ const StoriesComponent = () => {
         prompt: selectedGenre
           ? `[Genre: ${selectedGenre}] ${data.prompt}`
           : data.prompt,
+        wordLength:
+          selectedLength === "short" ? 150
+          : selectedLength === "long" ? 500
+          : 250,
       };
       const res = login
         ? await generateModel(payload).unwrap()
@@ -216,6 +221,24 @@ const StoriesComponent = () => {
                           }`}
                       >
                         {genre}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs text-gray-400 mr-1">📏 Length:</span>
+                    {(["short", "medium", "long"] as const).map((length) => (
+                      <button
+                        key={length}
+                        type="button"
+                        onClick={() => setSelectedLength(length)}
+                        className={`px-3 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
+                          selectedLength === length
+                            ? "bg-indigo-500 text-white shadow-lg shadow-indigo-500/30"
+                            : "bg-white/10 text-gray-400 hover:bg-white/20 hover:text-gray-200"
+                        }`}
+                      >
+                        {length.charAt(0).toUpperCase() + length.slice(1)}
                       </button>
                     ))}
                   </div>
