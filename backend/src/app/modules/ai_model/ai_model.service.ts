@@ -49,6 +49,7 @@ const aiModelGenerate = async (payload: IAIModel, token: ITokenPayload) => {
   }
 };
 
+
 const aiFreeModelGenerate = async (payload: IAIModel) => {
   const { prompt, language } = payload;
 
