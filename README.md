@@ -71,11 +71,22 @@
 3. **Environment files**
 
    - Copy `backend/.env.example` → `backend/.env` and fill in all values (see [Environment variables](#environment-variables)).
-  - Copy `frontend/.env.example` → `frontend/.env` and set `VITE_BASE_URL` to your API base URL (e.g. `http://localhost:5000/api/v1` when the backend runs on port 5000). Optionally set `VITE_SOCKET_URL` for real-time notifications; the frontend uses your logged-in access token to join the notification room.
+  - Copy `frontend/.env.example` → `frontend/.env` and set `VITE_BASE_URL` to your API base URL (e.g. `http://localhost:5000/api/v1` when the backend runs on port 5000). Set `VITE_SOCKET_URL` to your backend URL to enable real-time notifications (e.g. `http://localhost:5000` for local dev).
 
    > Never commit `backend/.env` or `frontend/.env`. Only `.env.example` files belong in git.
 
-4. **Run apps**
+4. **First-Time Setup (Admin Seeding)**
+
+   Before starting the server for the first time, you must create an admin user:
+   
+   ```bash
+   cd backend
+   npx ts-node scripts/seed-admin.ts
+   ```
+   
+   Make sure `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set in your `backend/.env` file.
+
+5. **Run apps**
 
    - **Both** (two terminals or one combined process):
 
@@ -86,7 +97,7 @@
    - **Backend only:** `npm run dev:backend` — API (default port **5000** if `PORT` is unset).
    - **Frontend only:** `npm run dev:frontend` — Vite dev server on **http://localhost:4001**
 
-5. **Production builds**
+6. **Production builds**
 
    ```bash
    npm run build
@@ -106,8 +117,8 @@ Use **two** Vercel projects from this monorepo:
 **Frontend environment variables** (redeploy after changing):
 
 - `VITE_BASE_URL` = `https://<your-api>.vercel.app/api/v1`
-- `VITE_SOCKET_URL` = `https://notification-socket-io.onrender.com` (or your own persistent Node host)
-- Do **not** point `VITE_SOCKET_URL` at your Vercel API URL — Vercel serverless cannot run Socket.IO, which causes endless `/socket.io/` **404** logs.
+- `VITE_SOCKET_URL` = `https://<your-api>.vercel.app` (use your persistent backend Node host, not Vercel serverless)
+- Do **not** point `VITE_SOCKET_URL` at a Vercel URL — Vercel serverless cannot run Socket.IO, which causes endless `/socket.io/` **404** logs. Use a persistent backend (same as your API or a dedicated Node host like Render, Railway, or Heroku).
 
 **Backend environment variables:** set `DATABASE_URL`, JWT secrets, AI keys, and `CORS_ORIGINS` including `https://storysparkai.vercel.app`.
 
@@ -220,6 +231,15 @@ Thanks to everyone who has helped build **Story Spark AI**. This section updates
     </td>
     <td align="center">
       <sub><b>P. Harshini Padmavathi</b></sub>
+    </td>
+    <td align="center">
+      <a href="https://github.com/charanbalaji2005">
+        <img src="https://github.com/charanbalaji2005.png" width="100" alt="charanbalaji2005" />
+        <br />
+        <sub><b>Charan Balaji</b></sub>
+      </a>
+      <br />
+      <sub>Contributor (ScrollFAB, Mobile Navigation, UI Components)</sub>
     </td>
   </tr>
 </table>
