@@ -21,15 +21,37 @@ const toggleReaction = async (
     throw new ApiError(httpStatus.BAD_REQUEST, "Post not found!");
   }
 
- main
-    const newReaction = await Reaction.create({
+  const existingReaction = await Reaction.findOne({
+    postId: new Types.ObjectId(postId),
+    userId: user._id,
+  });
+
+  let message = "";
+
+  if (existingReaction) {
+    if (existingReaction.type === type) {
+      await Reaction.deleteOne({ _id: existingReaction._id });
+      message = "Reaction removed successfully";
+    } else {
+      existingReaction.type = type as "like" | "love" | "laugh" | "angry" | "sad";
+      await existingReaction.save();
+      message = "Reaction updated successfully";
+    }
+  } else {
+    await Reaction.create({
       postId: new Types.ObjectId(postId),
       userId: user._id,
-      type: type,
+      type: type as "like" | "love" | "laugh" | "angry" | "sad",
     });
- main
-    };
+    message = "Reaction added successfully";
   }
+
+  const likesCount = await Reaction.countDocuments({
+    postId: new Types.ObjectId(postId),
+    type: "like",
+  });
+
+  return { message, likesCount };
 };
 
 export const ReactionService = {
