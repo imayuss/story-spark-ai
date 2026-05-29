@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
 import axios from "axios";
+import { instance as axiosInstance } from "../../helpers/axios/axionInstance";
 import { motion } from "framer-motion";
 import {
   Clock3,
@@ -107,10 +108,7 @@ export default function Contact() {
       }
     }
 
-    if (!trimmedData.feedbackType) {
-      setError("Please select a feedback type.");
-      return false;
-    }
+    // feedbackType is always set (defaults to 'general-feedback')
 
     return true;
   };
@@ -132,8 +130,7 @@ export default function Contact() {
 
       setLoading(true);
 
-      const baseUrl = getBaseUrl().replace(/\/$/, "");
-      const response = await axios.post(`${baseUrl}/contact`, {
+      const response = await axiosInstance.post(`${getBaseUrl()}/contact`, {
         fullname: formData.fullname.trim() || undefined,
         email: formData.email.trim() || undefined,
         feedbackType: formData.feedbackType,
@@ -141,7 +138,7 @@ export default function Contact() {
         message: formData.message.trim(),
       });
 
-      if (response?.data?.success || response.status === 200) {
+      if (response?.data?.success) {
         setSuccess(true);
         setFormData(INITIAL_FORM_DATA);
       } else {
