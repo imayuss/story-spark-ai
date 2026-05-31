@@ -378,7 +378,7 @@ const SignUpComponent = () => {
                 type="password"
                 placeholder="Confirm your password"
                 required={true}
-                icon="fi fi-rr-eye"
+                icon="fi fi-rr-lock" 
                 register={register}
                 autoComplete="new-password"
                 error={errors.confirmPassword}

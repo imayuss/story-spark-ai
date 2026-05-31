@@ -321,33 +321,33 @@ const TONES = [
     inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
   },
   {
+    label: "Whimsical",
+    emoji: "🌈",
+    activeClass: "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-sky-500/20",
+    inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
+  },
+  {
+    label: "Dramatic",
+    emoji: "🎬",
+    activeClass: "bg-red-500/20 text-red-300 border-red-500/60 shadow-red-500/20",
+    inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
+  },
+  {
     label: "Humorous",
     emoji: "😄",
     activeClass: "bg-yellow-500/20 text-yellow-300 border-yellow-500/60 shadow-yellow-500/20",
     inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
   },
   {
-    label: "Romantic",
-    emoji: "💕",
-    activeClass: "bg-pink-500/20 text-pink-300 border-pink-500/60 shadow-pink-500/20",
-    inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
-  },
-  {
-    label: "Epic",
-    emoji: "⚔️",
+    label: "Suspenseful",
+    emoji: "😰",
     activeClass: "bg-orange-500/20 text-orange-300 border-orange-500/60 shadow-orange-500/20",
     inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
   },
   {
-    label: "Mysterious",
-    emoji: "🔮",
-    activeClass: "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-purple-500/20",
-    inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
-  },
-  {
-    label: "Children's",
-    emoji: "🧸",
-    activeClass: "bg-green-500/20 text-green-300 border-green-500/60 shadow-green-500/20",
+    label: "Heartwarming",
+    emoji: "🥰",
+    activeClass: "bg-pink-500/20 text-pink-300 border-pink-500/60 shadow-pink-500/20",
     inactiveClass: "bg-white/5 text-gray-400 border-transparent hover:bg-white/10 hover:text-gray-200",
   },
 ] as const;
@@ -420,13 +420,13 @@ const StoriesComponent = () => {
   const [generateFreeModel] = useGenerateFreeModelMutation();
   const [selectedPrompt, setSelectedPrompt] = useState<string>("");
   const [showHelpModal, setShowHelpModal] = useState(false);
- const [selectedGenre, setSelectedGenre] = useState<string>(
+  const [selectedGenre, setSelectedGenre] = useState<string>(
   draft?.genre
-    ? (GENRES.find((g) => g.name === draft.genre || g.value === draft.genre)?.value ?? "")
-    : "",
+    ? (GENRES.find((g) => g.name === draft.genre || g.value === draft.genre)?.value ?? "🧙 Fantasy")
+    : "🧙 Fantasy",
 );
   const [selectedLength, setSelectedLength] = useState<string>(draft?.length || "medium");
-  const [selectedTone, setSelectedTone] = useState<ToneLabel | "">(draft?.tone || "");
+  const [selectedTone, setSelectedTone] = useState<ToneLabel | "">(draft?.tone || "Dramatic");
   const [textareaValue, setTextareaValue] = useState<string>(location.state?.prompt || draft?.prompt || "");
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const [selectedLanguage, setSelectedLanguage] = useState<string>(draft?.language || "English");
@@ -595,10 +595,10 @@ useEffect(() => {
           : data.prompt,
         wordLength:
           selectedLength === "short"
-            ? 150
+            ? 175
             : selectedLength === "long"
-            ? 500
-            : 250,
+            ? 800
+            : 450,
         language: selectedLanguage,
         tone: selectedTone || undefined,
       };
