@@ -1,27 +1,63 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Post } from "../../../models/post";
 import { useGetLatestListsQuery } from "../../../redux/apis/post.api";
 import LoadingAnimation from "../../loading/loading.component";
 import SSProfile from "../../ui-component/ss-profile/ss-profile";
 
+type PostAuthor = {
+  _id?: string;
+  name?: string;
+  email?: string;
+};
+
+type PostSummary = {
+  _id?: string;
+  title?: string;
+  author?: PostAuthor | string;
+  likesCount?: number;
+  commentsCount?: number;
+  viewsCount?: number;
+  bookmarks?: unknown[] | number;
+};
+
 type SpotlightWriter = {
-  author: Post["author"];
+  author: PostAuthor;
   storiesCount: number;
   likesCount: number;
   commentsCount: number;
   viewsCount: number;
   bookmarksCount: number;
   engagementScore: number;
-  topPost: Post;
+  topPost: PostSummary;
+};
+
+const normalizeAuthor = (author: PostAuthor | string | undefined): PostAuthor | null => {
+  if (!author) {
+    return null;
+  }
+
+  if (typeof author === "string") {
+    return { name: author };
+  }
+
+  return {
+    _id: author._id ? String(author._id) : undefined,
+    name: author.name,
+    email: author.email,
+  };
 };
 
 const TOP_WRITERS_LIMIT = 3;
 
-const getBookmarkCount = (post: Post) => post.bookmarks?.length ?? 0;
+const getBookmarkCount = (post: PostSummary) =>
+  typeof post.bookmarks === "number"
+    ? post.bookmarks
+    : Array.isArray(post.bookmarks)
+    ? post.bookmarks.length
+    : 0;
 
-const getPostEngagementScore = (post: Post) =>
+const getPostEngagementScore = (post: PostSummary) =>
   (post.likesCount ?? 0) * 3 +
   (post.commentsCount ?? 0) * 2 +
   getBookmarkCount(post) * 2 +
@@ -58,6 +94,63 @@ const formatMetric = (value: number) =>
 const CommunitySpotlightComponent = () => {
   const { data, isLoading, isError, refetch } = useGetLatestListsQuery(undefined);
   const navigate = useNavigate();
+
+  const topWriters = useMemo(() => {
+    const latestPosts = (data?.posts ?? []) as PostSummary[];
+    const writerMap = new Map<string, Omit<SpotlightWriter, "engagementScore">>();
+
+    latestPosts.forEach((post) => {
+      const author = normalizeAuthor(post.author);
+      if (!author) {
+        return;
+      }
+
+      const authorKey = author._id || author.email || author.name;
+      if (!authorKey) {
+        return;
+      }
+
+      const postStats = {
+        storiesCount: 1,
+        likesCount: post.likesCount ?? 0,
+        commentsCount: post.commentsCount ?? 0,
+        viewsCount: post.viewsCount ?? 0,
+        bookmarksCount: getBookmarkCount(post),
+        topPost: post,
+      };
+
+      const existingWriter = writerMap.get(authorKey);
+      if (existingWriter) {
+        existingWriter.storiesCount += 1;
+        existingWriter.likesCount += postStats.likesCount;
+        existingWriter.commentsCount += postStats.commentsCount;
+        existingWriter.viewsCount += postStats.viewsCount;
+        existingWriter.bookmarksCount += postStats.bookmarksCount;
+
+        if (getPostEngagementScore(post) > getPostEngagementScore(existingWriter.topPost)) {
+          existingWriter.topPost = post;
+        }
+      } else {
+        writerMap.set(authorKey, {
+          author,
+          storiesCount: postStats.storiesCount,
+          likesCount: postStats.likesCount,
+          commentsCount: postStats.commentsCount,
+          viewsCount: postStats.viewsCount,
+          bookmarksCount: postStats.bookmarksCount,
+          topPost: postStats.topPost,
+        });
+      }
+    });
+
+    return Array.from(writerMap.values())
+      .map((writer) => ({
+        ...writer,
+        engagementScore: getWriterEngagementScore(writer),
+      }))
+      .sort((a, b) => b.engagementScore - a.engagementScore)
+      .slice(0, TOP_WRITERS_LIMIT);
+  }, [data]);
 
   if (isLoading) return <LoadingAnimation />;
   if (isError) {
