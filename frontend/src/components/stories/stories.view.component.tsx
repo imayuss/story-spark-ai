@@ -803,13 +803,13 @@ const RelatedStoriesComponent: React.FC<IRelatedStoriesComponentProps> = ({
           <div
             onClick={() => navigate(`/post/${post._id}`)}
             key={post._id}
-            className="cursor-pointer bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-1 transition-all duration-300 overflow-hidden group flex flex-col h-full"
+            className="cursor-pointer bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-blue-500/20 hover:-translate-y-2 hover:border-blue-500/40 hover:bg-slate-800/80 transition-all duration-300 overflow-hidden group flex flex-col h-full"
           >
             <div className="relative overflow-hidden">
               <img
                 src={post.imageURL}
                 alt="Related Story"
-                className="w-full h-40 object-cover group-hover:scale-105 transition-transform duration-500"
+                className="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-60 pointer-events-none"></div>
             </div>
