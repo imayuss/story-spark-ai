@@ -14,7 +14,6 @@ import { OTPModel } from "../verify_email/otp.model";
 import { RefreshSession } from "./refresh_session.model";
 import { VerifyEmailService } from "../verify_email/verify_email.service";
 import { GamificationService } from "../gamification/gamification.service";
-import { USER_STATUS } from "../../../enums/user_status";
 
 const googleClient = new OAuth2Client(config.google_client_id);
 
@@ -262,6 +261,8 @@ const googleLogin = async (payload: { token: string }) => {
       const newUser: Partial<IUser> = {
         email: email as string,
         name: (googleName || email || "Google User").slice(0, 100),
+        status: USER_STATUS.ACTIVE,
+        subscriptionType: SUBSCRIPTION_TYPE.FREE,
         profile: {
           avatar: (picture as string) || "",
           bio: "",
