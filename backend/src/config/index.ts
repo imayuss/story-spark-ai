@@ -1,47 +1,11 @@
 import dotenv from "dotenv";
 import path from "path";
-import { z } from "zod";
 
 dotenv.config({ path: path.join(__dirname, "../../.env") });
 
-const envVarsSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
-  PORT: z.string().default("5000"),
-  DATABASE_URL: z.string({
-    required_error: "DATABASE_URL is required",
-  }),
-  CORS_ORIGINS: z.string().optional(),
-  SALT_ROUNDS: z.string().default("12"),
-  JWT_SECRET: z.string({
-    required_error: "JWT_SECRET is required",
-  }),
-  JWT_REFRESH_SECRET: z.string({
-    required_error: "JWT_REFRESH_SECRET is required",
-  }),
-  JWT_EXPIRES_IN: z.string().default("1d"),
-  JWT_REFRESH_EXPIRES_IN: z.string().default("365d"),
-  DEFAULT_ADMIN_PASSWORD: z.string().optional(),
-  OPEN_AI_KEY: z.string().optional(),
-  UNSPLASH_KEY_API: z.string().optional(),
-  UNSPLASH_KEY_API_SECRET: z.string().optional(),
-  GEMINI_API_KEY: z.string().optional(),
-  VERIFY_EMAIL: z.string().optional(),
-  VERIFY_PASSWORD: z.string().optional(),
-  GOOGLE_CLIENT_ID: z.string().optional(),
-});
-
-const envVars = envVarsSchema.safeParse(process.env);
-
-if (!envVars.success) {
-  console.error("❌ Invalid environment variables:", envVars.error.format());
-  throw new Error("Invalid environment variables");
-}
-
-const config = envVars.data;
-
-const parseCorsOrigins = (raw: string | undefined): string[] | undefined => {
+const parseCorsOrigins = (
+  raw: string | undefined
+): string[] | undefined => {
   if (!raw?.trim()) return undefined;
   return raw
     .split(",")
@@ -49,24 +13,51 @@ const parseCorsOrigins = (raw: string | undefined): string[] | undefined => {
     .filter(Boolean);
 };
 
+const requiredEnv = (key: string): string => {
+  const value = process.env[key]?.trim();
+  if (!value) {
+    throw new Error(
+      `${key} environment variable is required. See backend/.env.example for setup instructions.`
+    );
+  }
+  return value;
+};
+
 export default {
-  env: config.NODE_ENV,
-  port: config.PORT,
-  database_url: config.DATABASE_URL,
-  cors_origins: parseCorsOrigins(config.CORS_ORIGINS),
-  bcrypt_salt_rounds: config.SALT_ROUNDS,
+  env: process.env.NODE_ENV,
+  port: process.env.PORT || "5000",
+  disable_logs: process.env.DISABLE_LOGS === "true" || process.env.VERCEL === "1",
+  database_url: (() => {
+    const url = process.env.DATABASE_URL?.trim();
+    if (!url) {
+      return "mongodb://127.0.0.1:27017/story_spark_ai";
+    }
+    return url;
+  })(),
+  cors_origins: parseCorsOrigins(process.env.CORS_ORIGINS),
+  bcrypt_salt_rounds: (() => {
+    const raw = process.env.SALT_ROUNDS;
+    const parsed = raw ? Number(raw) : NaN;
+    return Number.isInteger(parsed) && parsed > 0 ? parsed : 10;
+  })(),
   jwt: {
-    secret: config.JWT_SECRET,
-    refresh_secret: config.JWT_REFRESH_SECRET,
-    expires_in: config.JWT_EXPIRES_IN,
-    refresh_expires_in: config.JWT_REFRESH_EXPIRES_IN,
+    secret: requiredEnv("JWT_SECRET"),
+    refresh_secret: requiredEnv("JWT_REFRESH_SECRET"),
+    expires_in: process.env.JWT_EXPIRES_IN,
+    refresh_expires_in: process.env.JWT_REFRESH_EXPIRES_IN,
   },
-  default_admin_password: config.DEFAULT_ADMIN_PASSWORD,
-  openai_key: config.OPEN_AI_KEY,
-  unsplash_key_api: config.UNSPLASH_KEY_API,
-  unsplash_secret_key_api: config.UNSPLASH_KEY_API_SECRET,
-  gemini_api_key: config.GEMINI_API_KEY,
-  verify_email: config.VERIFY_EMAIL,
-  verify_password: config.VERIFY_PASSWORD,
-  google_client_id: config.GOOGLE_CLIENT_ID,
+  default_admin_password: process.env.DEFAULT_ADMIN_PASSWORD,
+  openai_key: process.env.OPEN_AI_KEY,
+  image_generation_provider: process.env.IMAGE_GENERATION_PROVIDER,
+  image_generation_api_key: process.env.IMAGE_GENERATION_API_KEY,
+  unsplash_key_api: process.env.UNSPLASH_KEY_API,
+  unsplash_secret_key_api: process.env.UNSPLASH_KEY_API_SECRET,
+  gemini_api_key: process.env.GEMINI_API_KEY,
+  verify_email: process.env.VERIFY_EMAIL,
+  verify_password: process.env.VERIFY_PASSWORD,
+  google_client_id: process.env.GOOGLE_CLIENT_ID,
+  github: {
+    token: process.env.GITHUB_TOKEN,
+    repo: process.env.GITHUB_REPO || "ronisarkarexe/story-spark-ai",
+  },
 };

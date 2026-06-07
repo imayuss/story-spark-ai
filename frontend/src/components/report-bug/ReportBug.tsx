@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-hot-toast";
+import { useSubmitBugReportMutation } from "../../redux/apis/bugReport.api";
+import { Image as ImageIcon, X } from "lucide-react";
 import { 
   Bug, 
   Send, 
@@ -13,7 +15,9 @@ import {
   MessageSquare,
   ClipboardList,
   Target,
-  FileWarning
+  FileWarning,
+  Image as ImageIcon,
+  X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -45,7 +49,7 @@ const SEVERITIES = [
 ];
 
 const ReportBug = () => {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitBugReport, { isLoading: isSubmitting }] = useSubmitBugReportMutation();
   const [isSuccess, setIsSuccess] = useState(false);
 
   const {
@@ -56,12 +60,14 @@ const ReportBug = () => {
   } = useForm<ReportBugFormData>();
 
   const onSubmit = async (data: ReportBugFormData) => {
-    setIsSubmitting(true);
-    
-    // Simulate API call
     try {
-      console.log("Submitting bug report:", data);
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, val]) => {
+        if (val !== undefined) {
+          formData.append(key, val);
+        }
+      });
+      await submitBugReport(formData).unwrap();
       
       setIsSuccess(true);
       toast.success("Bug report submitted successfully!");
@@ -71,8 +77,6 @@ const ReportBug = () => {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch {
       toast.error("Failed to submit report. Please try again.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

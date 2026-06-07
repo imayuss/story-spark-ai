@@ -5,6 +5,9 @@ import { routeParam } from "../../../shared/route_param";
 import sendResponse from "../../../shared/send_response";
 import { getToken } from "../../middleware/token";
 import catchAsync from "../../../shared/catch_async";
+import ApiError from "../../../errors/api_error";
+import { User } from "./user.model";
+import { WritingStreakService } from "../gamification/writing_streak.service";
 
 const getAllUsers = async (req: Request, res: Response) => {
   try {
@@ -61,23 +64,17 @@ const updateUser = async (req: Request, res: Response) => {
   }
 };
 
-const deleteUser = async (req: Request, res: Response) => {
-  try {
-    const id = routeParam(req.params.id);
+const deleteUser = catchAsync(async (req: Request, res: Response) => {
+  const id = routeParam(req.params.id);
 
-    await UserService.deleteUser(id);
+  await UserService.deleteUser(id);
 
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "User deleted successfully!",
-    });
-  } catch (error) {
-    res.status(httpStatus.BAD_REQUEST).json({
-      message: "Fail to get users!",
-    });
-  }
-};
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User deleted successfully!",
+  });
+});
 
 const applyForWriter = catchAsync(async (req: Request, res: Response) => {
   const token = await getToken(req);
@@ -94,6 +91,15 @@ const applyForWriter = catchAsync(async (req: Request, res: Response) => {
 
 const approveWriterApplication = catchAsync(
   async (req: Request, res: Response) => {
+    // Defense-in-depth: verify caller is admin/super_admin at the controller level
+    const token = await getToken(req);
+    if (token.role !== "admin" && token.role !== "super_admin") {
+      throw new ApiError(
+        httpStatus.FORBIDDEN,
+        "Only administrators can approve writer applications!"
+      );
+    }
+
     const { email } = req.body;
 
     const result = await UserService.approveWriterApplication(email);
@@ -161,6 +167,52 @@ const getFollowStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getWritingStreak = catchAsync(async (req: Request, res: Response) => {
+  const token = await getToken(req);
+  const user = await User.findOne({ email: token.email });
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
+  }
+  const result = await WritingStreakService.getStreak(String(user._id));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Writing streak fetched successfully!",
+    data: result,
+  });
+});
+
+const getAchievements = catchAsync(async (req: Request, res: Response) => {
+  const token = await getToken(req);
+  const user = await User.findOne({ email: token.email });
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
+  }
+  const result = await WritingStreakService.getAchievements(String(user._id));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Achievements fetched successfully!",
+    data: { achievements: result },
+  });
+});
+
+const updateWritingStreak = catchAsync(async (req: Request, res: Response) => {
+  const token = await getToken(req);
+  const user = await User.findOne({ email: token.email });
+  if (!user) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
+  }
+  await WritingStreakService.updateStreakAndUnlocks(String(user._id));
+  const result = await WritingStreakService.getStreak(String(user._id));
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Writing streak updated successfully!",
+    data: result,
+  });
+});
+
 export const UserController = {
   getAllUsers,
   getUser,
@@ -172,4 +224,7 @@ export const UserController = {
   getAllWriterApplicationUsers,
   toggleFollow,
   getFollowStatus,
+  getWritingStreak,
+  getAchievements,
+  updateWritingStreak,
 };

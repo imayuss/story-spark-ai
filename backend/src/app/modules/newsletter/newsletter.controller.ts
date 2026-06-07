@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import * as newsletterService from "./newsletter.service";
+import { status as httpStatus } from "http-status";
 
 // Subscribe user to newsletter
 export const subscribe = async (req: Request, res: Response) => {
@@ -13,11 +14,15 @@ export const subscribe = async (req: Request, res: Response) => {
     // Extract logged-in user id from JWT token if available
     const userId = (req as any).user?.id;
 
+    // Origin of the API request, used to build the unsubscribe link in the email.
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+
     const result = await newsletterService.subscribeNewsletter(
       email,
       name,
       source,
-      userId
+      userId,
+      baseUrl
     );
 
     res.status(200).json(result);
@@ -32,6 +37,7 @@ export const subscribe = async (req: Request, res: Response) => {
     });
   }
 };
+
 // Verify newsletter subscription token
 export const verify = async (req: Request, res: Response) => {
   try {
@@ -47,17 +53,31 @@ export const verify = async (req: Request, res: Response) => {
   }
 };
 
-// Unsubscribe user from newsletter
-export const unsubscribe = async (req: Request, res: Response) => {
+// Unsubscribe via token from the email link. Safe, no email enumeration.
+export const unsubscribeByToken = async (req: Request, res: Response) => {
   try {
-    const { email } = req.body;
+    const token = (req.params.token as string).trim();
 
-    const result = await newsletterService.unsubscribeNewsletter(email);
+    const result = await newsletterService.unsubscribeByToken(token);
 
+    res.status(httpStatus.OK).json({
+      success: true,
+      message: "Successfully unsubscribed",
+      data: result,
+    });
+  } catch (error) {
+    res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Failed to unsubscribe",
+      error,
+    });
+    const { token } = req.params;
+    const safeToken = Array.isArray(token) ? token[0] : token;
+
+    const result = await newsletterService.unsubscribeByToken(safeToken as string);
+    
     res.status(200).json(result);
   } catch (err: any) {
-    res.status(400).json({
-      message: err.message,
-    });
+    res.status(400).json({ message: err.message });
   }
 };

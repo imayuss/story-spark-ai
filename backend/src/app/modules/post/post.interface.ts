@@ -13,13 +13,18 @@ export interface IPostPayload {
   imageURL: string;
   topic: ITopic[];
   language?: string;
+  emotions?: string[];
+  genre?: string;
+  isPublished?: boolean;
 }
 
 export interface IPost extends IPostPayload {
+  _id?: Types.ObjectId;
   author: Types.ObjectId;
   likesCount: number;
   commentsCount: number;
   viewsCount: number;
+  bookmarksCount: number;  
   isPublished: boolean;
   isFeaturedPost?: boolean;
   isDeleted?: boolean;
