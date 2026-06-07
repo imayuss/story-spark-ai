@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
@@ -27,7 +27,6 @@ const itemVariants = {
 };
 
 const features = [
-// ... (rest of the features array remains the same)
   {
     title: "Infinite Variations",
     description: "Generate multiple unique branches of your story from a single starting prompt. Explore every creative possibility.",
@@ -211,6 +210,10 @@ const HeroSectionComponent = () => {
   const nextStarId = useRef(1);
   const starTimers = useRef<number[]>([]);
   const badgeRef = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+
+  const hoverScale = shouldReduceMotion ? 1 : 1.03;
+  const tapScale = shouldReduceMotion ? 1 : 0.97;
 
   useGSAP(() => {
     const badge = badgeRef.current;
@@ -278,7 +281,12 @@ const HeroSectionComponent = () => {
   }, []);
 
   return (
-    <div className="relative min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 overflow-hidden transition-colors duration-300 w-full box-border">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="relative min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 overflow-hidden transition-colors duration-300 w-full box-border"
+    >
       <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-sky-200/40 dark:bg-blue-600/10 rounded-full blur-[120px] pointer-events-none -z-10 select-none transition-colors duration-300" />
       <div className="absolute top-[20%] right-[-10%] w-[500px] h-[500px] bg-fuchsia-200/30 dark:bg-purple-600/10 rounded-full blur-[120px] pointer-events-none -z-10 select-none transition-colors duration-300" />
 
@@ -297,7 +305,10 @@ const HeroSectionComponent = () => {
             <span className="text-xs font-bold text-slate-700 dark:text-slate-300 tracking-wider uppercase">StorySparkAI v2.0 is live</span>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight mb-6 sm:mb-8 leading-tight select-none tracking-tight">
+          <motion.h1
+            variants={itemVariants}
+            className="text-3xl sm:text-5xl lg:text-7xl font-extrabold tracking-tight mb-6 sm:mb-8 leading-tight select-none"
+          >
             Ignite Your Imagination With <br className="hidden sm:block" />
             <span className="hero-gradient-text pb-2 block sm:inline">
               AI-Driven Storytelling
@@ -309,20 +320,31 @@ const HeroSectionComponent = () => {
             Perfect for writers, creators, and enthusiasts exploring the future of fiction.
           </p>
           
-          <div className="w-full box-border flex flex-col items-center justify-center">
+          <motion.div
+            variants={itemVariants}
+            className="w-full box-border flex flex-col items-center justify-center"
+          >
             <div className="relative max-w-3xl w-full box-border">
               <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 select-none">
-                <Link to="/stories" className="w-full sm:w-auto">
-                  <button className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-500/10 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2.5 cursor-pointer uppercase tracking-wider">
+                <Link to="/stories" className="w-full sm:w-auto focus:outline-none" tabIndex={-1}>
+                  <motion.button
+                    whileHover={{ scale: hoverScale, y: shouldReduceMotion ? 0 : -2 }}
+                    whileTap={{ scale: tapScale }}
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs sm:text-sm font-bold shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/25 transition-[colors,box-shadow] duration-200 flex items-center justify-center gap-2.5 cursor-pointer uppercase tracking-wider focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+                  >
                     <i className="fa fa-wand-magic-sparkles text-sm"></i>
                     <span>Get Started</span>
-                  </button>
+                  </motion.button>
                 </Link>
-                <Link to="/collab" className="w-full sm:w-auto">
-                  <button className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl bg-white/80 dark:bg-[#111827]/40 backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-[#111827]/80 hover:scale-[1.02] active:scale-[0.98] transition-all duration-150 flex items-center justify-center gap-2.5 cursor-pointer uppercase tracking-wider">
+                <Link to="/collab" className="w-full sm:w-auto focus:outline-none" tabIndex={-1}>
+                  <motion.button
+                    whileHover={{ scale: hoverScale, y: shouldReduceMotion ? 0 : -2 }}
+                    whileTap={{ scale: tapScale }}
+                    className="w-full sm:w-auto px-6 sm:px-8 py-3 rounded-xl bg-white/80 dark:bg-[#111827]/40 backdrop-blur-md border border-slate-200 dark:border-white/10 text-slate-700 dark:text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-slate-50 dark:hover:bg-[#111827]/80 hover:shadow-md transition-[colors,box-shadow] duration-200 flex items-center justify-center gap-2.5 cursor-pointer uppercase tracking-wider focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-slate-950"
+                  >
                     <span>✍️</span>
                     <span>Collab Mode</span>
-                  </button>
+                  </motion.button>
                 </Link>
               </div>
             </div>
@@ -343,7 +365,10 @@ const HeroSectionComponent = () => {
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 sm:pb-28 w-full box-border">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 w-full box-border">
+        <motion.div
+          variants={itemVariants}
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 lg:gap-8 w-full box-border"
+        >
           {features.map((feature, index) => (
             <FeatureCard feature={feature} key={index} />
           ))}
