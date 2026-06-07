@@ -1,4 +1,4 @@
-import * as bcrypt from "bcryptjs";
+import bcrypt from "bcryptjs";
 import httpStatus from "http-status";
 import jwt, { Secret } from "jsonwebtoken";
 import crypto from "crypto";
@@ -93,7 +93,7 @@ const login = async (payload: AuthModel & { rememberMe?: boolean }) => {
 
 const register = async (payload: IUser & { verificationToken?: string; confirmPassword?: string }) => {
   const { email: userEmail, verificationToken } = payload;
-  
+
   if (!verificationToken) {
     throw new ApiError(
       httpStatus.UNAUTHORIZED,
@@ -128,7 +128,7 @@ const register = async (payload: IUser & { verificationToken?: string; confirmPa
   if (isExistUser) {
     throw new ApiError(httpStatus.CONFLICT, "User already exists!");
   }
-  
+
   const { verificationToken: _, ...userPayload } = payload;
   const result = await User.create(userPayload);
 
@@ -272,7 +272,7 @@ const googleLogin = async (payload: { token: string }) => {
         email: email as string,
         name: (googleName || email || "Google User").slice(0, 100),
         status: "Active",
-        subscriptionType: "Free",
+        subscriptionType: "free",
         profile: {
           avatar: (picture as string) || "",
           bio: "",
@@ -302,11 +302,11 @@ const googleLogin = async (payload: { token: string }) => {
   } catch (error: any) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error(`Google login error: ${errorMessage}`);
-    
+
     if (error instanceof ApiError) {
       throw error;
     }
-    
+
     throw new ApiError(
       httpStatus.UNAUTHORIZED,
       error.message || "Google login failed"
@@ -379,7 +379,7 @@ const resetPassword = async (payload: {
   if (password !== confirmPassword) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Passwords do not match!");
   }
-  
+
   const getPasswordError = (pwd: string) => {
     if (pwd.length < 8) return "Password must be of at least 8 characters long";
   if (!/[A-Z]/.test(pwd)) return "Password must contain at least one uppercase letter(A-Z)";
