@@ -41,7 +41,7 @@ const aiFreeModelGenerate = catchAsync(async (req: Request, res: Response) => {
 
   if (!userId) {
     userId = Math.random().toString(36).substring(7);
-    setGuestUserIdCookie(res, userId);  // ✅ Fixed: now includes sameSite
+    setGuestUserIdCookie(res, userId);
   }
 
   const guard = createGuestQuotaGuard(userId);
@@ -86,7 +86,7 @@ const aiFreeModelAlternateEndings = catchAsync(
 
     if (!userId) {
       userId = Math.random().toString(36).substring(7);
-      setGuestUserIdCookie(res, userId);  // ✅ Fixed: now includes sameSite
+      setGuestUserIdCookie(res, userId);
     }
 
     const guard = createGuestQuotaGuard(userId);
