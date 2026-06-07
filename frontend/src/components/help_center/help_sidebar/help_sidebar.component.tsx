@@ -90,6 +90,11 @@ const HelpSidebar = () => {
                   Navigate through guides, troubleshooting, setup instructions, and support resources.
                 </p>
               </div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Help Center</h2>
+              <p className="mt-1.5 text-xs font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+                Navigate through core system documentation architecture nodes.
+              </p>
+            </div>
 
               <div className="relative w-full max-w-full space-y-2">
                 {HELP_SECTIONS.map((section) => {
@@ -104,6 +109,21 @@ const HelpSidebar = () => {
                           : "border-slate-200 dark:border-white/5 bg-white/60 dark:bg-white/[0.03] hover:border-blue-200 dark:hover:border-white/10 hover:bg-slate-50 dark:hover:bg-white/[0.05] hover:shadow-[0_5px_14px_rgba(15,23,42,0.08)]"
                       }`}
                     >
+                      <i className={`fa-solid ${section.icon} text-sm`} aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className={`font-bold text-xs sm:text-sm tracking-tight transition-colors duration-200 ${isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white"}`}>
+                        {section.label}
+                      </p>
+                    </div>
+                    <div className="shrink-0">
+                      <div className={`w-1.5 h-1.5 rounded-full transition-all duration-200 ${isActive ? "bg-blue-500 scale-125 shadow-[0_0_8px_rgba(59,130,246,0.6)]" : "bg-slate-300 dark:bg-slate-700"}`} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
                       {isActive && (
                         <motion.div
                           layoutId="sidebar-active-pill"
@@ -138,14 +158,23 @@ const HelpSidebar = () => {
             {/* Support CTA Card */}
             <motion.div
               whileHover={{ y: -2 }}
-              className="relative overflow-hidden mt-8 rounded-3xl border border-blue-200 dark:border-indigo-500/20 bg-gradient-to-br from-blue-50 via-indigo-50 to-white dark:from-indigo-500/10 dark:via-blue-500/10 dark:to-slate-900/30 p-6"
+              className="relative overflow-hidden mt-6 rounded-2xl border border-slate-100 dark:border-white/5 bg-slate-50/50 dark:bg-white/[0.02] p-5 w-full box-border"
             >
-              <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 rounded-full blur-3xl" />
-              <div className="relative z-10">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-lg">
-                    <i className="fa-solid fa-sparkles text-lg" aria-hidden="true" />
+              <div className="relative z-10 w-full box-border text-center sm:text-left">
+                <div className="flex flex-col sm:flex-row items-center gap-3 mb-4 select-none">
+                  <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center shadow-md shrink-0">
+                    <i className="fa-solid fa-sparkles text-sm"></i>
                   </div>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-bold text-xs sm:text-sm text-slate-800 dark:text-white tracking-tight">Need More Help?</h3>
+                    <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">Contact operations support</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => scrollToSection("support-links-section")}
+                  className="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold py-3 transition-all duration-150 active:scale-[0.98] shadow-sm hover:shadow-md uppercase tracking-wider cursor-pointer"
+                >
+                  Support Links
                   <div>
                     <h3 className="font-bold text-slate-800 dark:text-white">Need More Help?</h3>
                     <p className="text-sm text-slate-600 dark:text-slate-400">Contact support</p>
@@ -163,6 +192,10 @@ const HelpSidebar = () => {
             </motion.div>
           </div>
         </motion.div>
+      </nav>
+
+      <nav className="lg:hidden sticky top-[61px] sm:top-[69px] z-20 -mx-4 px-4 py-3 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-b border-slate-200/60 dark:border-white/10 mb-6 w-screen box-border select-none overflow-hidden" aria-label="Help center mobile navigation">
+        <div ref={mobileNavRef} className="flex gap-2 overflow-x-auto pb-0.5 scrollbar-none w-full items-center box-border touch-pan-x">
       </div>
     </nav>
 
@@ -185,12 +218,11 @@ const HelpSidebar = () => {
                 type="button"
                 data-section-id={section.id}
                 onClick={() => scrollToSection(section.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 ${
+                className={`flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold transition-all duration-150 border uppercase tracking-wider cursor-pointer outline-none ${
                   isSelected
-                    ? "bg-indigo-100 dark:bg-indigo-500/30 text-indigo-700 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-500/40 shadow-sm"
-                    : "bg-white dark:bg-white/5 text-slate-600 dark:text-gray-400 border border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/10"
+                    ? "bg-blue-50 dark:bg-white/5 text-blue-600 dark:text-blue-400 border-blue-500/20 shadow-sm"
+                    : "bg-slate-50 dark:bg-[#111827]/40 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-white/5 hover:bg-slate-100 dark:hover:bg-white/10"
                 }`}
-                aria-current={isSelected ? "true" : undefined}
               >
                 {section.label}
               </button>

@@ -56,6 +56,13 @@ const HelpHero: FC<HelpHeroProps> = ({
           </Link>
         </motion.div>
 
+        <motion.div
+          className="text-center max-w-4xl mx-auto w-full box-border"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="inline-flex items-center justify-center mx-auto px-4 py-1.5 mb-5 sm:mb-6 rounded-full border border-blue-500/10 dark:border-white/10 bg-blue-500/5 text-blue-600 dark:text-blue-400 select-none shadow-sm dark:shadow-none">
         {/* Main Content */}
         <div className="text-center max-w-4xl mx-auto">
           <motion.div
@@ -71,7 +78,6 @@ const HelpHero: FC<HelpHeroProps> = ({
 
           <h1
             id="help-center-title"
-
             className="text-3xl sm:text-5xl lg:text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-slate-900 via-blue-700 to-indigo-800 dark:from-slate-100 dark:via-blue-400 dark:to-indigo-400 mb-4 sm:mb-5 tracking-tight"
           >
             How can we help you today?
@@ -89,28 +95,6 @@ const HelpHero: FC<HelpHeroProps> = ({
             />
           </div>
         </motion.div>
-
-            className="text-4xl sm:text-5xl lg:text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-gray-800 via-blue-700 to-indigo-700 dark:from-gray-200 dark:via-blue-400 dark:to-indigo-400 mb-6 tracking-tight drop-shadow-sm dark:drop-shadow-none"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            How can we help you today?
-          </motion.h1>
-
-          <p className="text-lg text-slate-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Find answers, troubleshoot issues, and get started with StorySparkAI.
-            Search our guides or browse topics below.
-          </p>
-
-            <HelpSearchBar
-              value={searchQuery}
-              onChange={handleSearchChange}
-              resultCount={searchQuery ? resultCount : undefined}
-            />
-          </motion.div>
-        </div>
-
       </div>
     </section>
   );

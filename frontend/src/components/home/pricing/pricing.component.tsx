@@ -38,6 +38,8 @@ const plans: Plan[] = [
       "Single-user workspace",
     ],
     linkTo: "/signup",
+    buttonLabel: "Get Started",
+    highlight: false,
     buttonLabel: "Start Free",
   },
   {
@@ -82,6 +84,7 @@ const plans: Plan[] = [
     ],
     linkTo: "/contact-us",
     buttonLabel: "Contact Sales",
+    highlight: false,
   },
 ];
 
@@ -141,7 +144,6 @@ const PricingComponent: React.FC = () => {
             and upgrade whenever you're ready to unlock advanced AI tools.
           </p>
         </div>
-
         {/* Social Proof */}
         <div className="mb-14">
           <div className="grid grid-cols-1 gap-8 text-center sm:grid-cols-3">
