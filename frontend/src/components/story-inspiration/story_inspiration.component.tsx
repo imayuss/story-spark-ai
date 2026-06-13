@@ -129,10 +129,7 @@ const StoryInspirationComponent: React.FC = () => {
           ">
             <span className="block text-slate-900 dark:text-white">Story</span>
             <span className="
-              block text-transparent bg-clip-text
-              bg-gradient-to-r
-              from-indigo-600 via-blue-600 to-purple-600
-              dark:from-indigo-200 dark:via-blue-200 dark:to-purple-200
+              block text-purple-600 dark:text-purple-300
             ">
               Inspiration Hub
             </span>
