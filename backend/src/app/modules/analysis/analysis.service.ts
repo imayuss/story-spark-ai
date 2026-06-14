@@ -7,7 +7,67 @@ import ApiError from "../../../errors/api_error";
 import httpStatus from "http-status";
 import { WriterApplication } from "../writer_application/writer_application.model";
 
-main
+// ─── Dashboard Analysis ────────────────────────────────────────────────────────
+
+const getDashboardAnalysis = async (userId: string) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found.");
+  }
+
+  if (user.status === USER_STATUS.BLOCKED) {
+    throw new ApiError(httpStatus.FORBIDDEN, "Your account has been blocked.");
+  }
+
+  const role = user.role;
+
+  // ── Writer / Admin dashboard ──────────────────────────────────────────────
+  if (
+    role === ENUM_USER_ROLE.WRITER ||
+    role === ENUM_USER_ROLE.ADMIN ||
+    role === ENUM_USER_ROLE.SUPER_ADMIN
+  ) {
+    const userPosts = await Post.find({
+      author: userId,
+      isDeleted: false,
+    }).select("viewsCount likesCount topic publishedAt createdAt");
+
+    const totalPosts = userPosts.length;
+
+    // Sum all viewsCount across this author's posts as a proxy for total readers
+    const totalReaders = userPosts.reduce(
+      (sum, post) => sum + (post.viewsCount ?? 0),
+      0
+    );
+
+    // Posts per month — group by year-month of createdAt
+    const postsPerMonth: Record<string, number> = {};
+    userPosts.forEach((post) => {
+      const date = (post as any).createdAt as Date;
+      if (date) {
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        postsPerMonth[key] = (postsPerMonth[key] ?? 0) + 1;
+      }
+    });
+
+    // Topic frequency count across all posts
+    const topicCount: Record<string, number> = {};
+    userPosts.forEach((post) => {
+      if (Array.isArray(post.topic)) {
+        post.topic.forEach((t: { title: string; selected: boolean }) => {
+          if (t?.title) {
+            topicCount[t.title] = (topicCount[t.title] ?? 0) + 1;
+          }
+        });
+      }
+    });
+
+    // Writer application status
+    const application = await WriterApplication.findOne({
+      user: userId,
+    }).sort({ createdAt: -1 });
+
+    const applicationStatus = application?.status ?? null;
 
     return {
       role,
@@ -16,20 +76,45 @@ main
         totalPosts,
         subscriptionStatus: user.subscriptionType.toUpperCase(),
         applicationStatus,
-        gamification: user.gamification || { xp: 0, level: 1, streak: 0, badges: [] },
+        gamification: user.gamification || {
+          xp: 0,
+          level: 1,
+          streak: 0,
+          badges: [],
+        },
       },
       posts: {
         perMonth: postsPerMonth,
         topics: topicCount,
-      }
+      },
     };
   }
 
-  // Else standard user
+  // ── Standard user dashboard ───────────────────────────────────────────────
   return {
-main
+    role,
+    userStats: {
+      subscriptionStatus: user.subscriptionType.toUpperCase(),
+      postsCount: user.postsCount ?? 0,
+      followersCount: user.followers?.length ?? 0,
+      followingCount: user.following?.length ?? 0,
+      gamification: user.gamification || {
+        xp: 0,
+        level: 1,
+        streak: 0,
+        badges: [],
+      },
+      writingStreak: user.writingStreak || {
+        currentStreak: 0,
+        longestStreak: 0,
+        lastActiveDate: null,
+        totalWritingDays: 0,
+      },
+    },
   };
 };
+
+// ─── Story Analysis ────────────────────────────────────────────────────────────
 
 const analyzeStory = async (content: string) => {
   const suggestions: Array<{
@@ -41,20 +126,28 @@ const analyzeStory = async (content: string) => {
     suggestedText?: string;
   }> = [];
 
-  const generateId = (prefix: string, index: number) => `${prefix}_${index}_${Math.random().toString(36).substr(2, 9)}`;
+  const generateId = (prefix: string, index: number) =>
+    `${prefix}_${index}_${Math.random().toString(36).substr(2, 9)}`;
 
   const cleanText = content.replace(/[\r\n]+/g, " ").trim();
-  const words = cleanText.split(/\s+/).map(w => w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").toLowerCase()).filter(Boolean);
+  const words = cleanText
+    .split(/\s+/)
+    .map((w) =>
+      w.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()?"']/g, "").toLowerCase()
+    )
+    .filter(Boolean);
 
   // 1. Detect repetitive words
   const stopWords = new Set([
-    "the", "a", "an", "and", "or", "but", "in", "on", "at", "for", "of", "with", "to", "is", "was", "were", 
-    "it", "he", "she", "they", "you", "we", "i", "my", "his", "her", "their", "its", "had", "have", "has", 
-    "been", "would", "could", "should", "will", "would", "that", "this", "there", "then", "thence", "thus"
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "for", "of",
+    "with", "to", "is", "was", "were", "it", "he", "she", "they", "you",
+    "we", "i", "my", "his", "her", "their", "its", "had", "have", "has",
+    "been", "would", "could", "should", "will", "would", "that", "this",
+    "there", "then", "thence", "thus",
   ]);
 
   const wordCounts: Record<string, number> = {};
-  words.forEach(w => {
+  words.forEach((w) => {
     if (w.length >= 4 && !stopWords.has(w)) {
       wordCounts[w] = (wordCounts[w] || 0) + 1;
     }
@@ -73,7 +166,7 @@ const analyzeStory = async (content: string) => {
     walk: ["stroll", "amble", "tread", "pace"],
     walked: ["strolled", "ambled", "trod", "paced"],
     went: ["journeyed", "proceeded", "departed"],
-    said: ["declared", "stated", "whispered", "exclaimed", "commented"]
+    said: ["declared", "stated", "whispered", "exclaimed", "commented"],
   };
 
   let wordRepIndex = 0;
@@ -81,7 +174,7 @@ const analyzeStory = async (content: string) => {
     if (count >= 3) {
       const synonyms = synonymMap[word] || [];
       const suggestedText = synonyms.length > 0 ? synonyms[0] : undefined;
-      
+
       const originalMatchRegex = new RegExp(`\\b${word}\\b`, "i");
       const match = content.match(originalMatchRegex);
       const originalText = match ? match[0] : word;
@@ -90,29 +183,31 @@ const analyzeStory = async (content: string) => {
         id: generateId("rep_word", wordRepIndex++),
         category: "Vocabulary",
         title: "Repeated Word Usage",
-        description: `The word '${originalText}' appears frequently (${count} times). Consider using alternatives like ${synonyms.length > 0 ? synonyms.join(", ") : "a synonym"} to enrich your vocabulary.`,
+        description: `The word '${originalText}' appears frequently (${count} times). Consider using alternatives like ${
+          synonyms.length > 0 ? synonyms.join(", ") : "a synonym"
+        } to enrich your vocabulary.`,
         originalText,
-        suggestedText
+        suggestedText,
       });
     }
   });
 
-  // 2. Stronger vocabulary suggestions (weak words/phrases)
+  // 2. Stronger vocabulary suggestions
   const weakReplacements: Array<{ weak: string; strong: string }> = [
-    { weak: "very bad", strong: "terrible" },
-    { weak: "very good", strong: "excellent" },
-    { weak: "very happy", strong: "ecstatic" },
-    { weak: "very sad", strong: "devastated" },
-    { weak: "very angry", strong: "furious" },
-    { weak: "very cold", strong: "freezing" },
-    { weak: "very hot", strong: "scorching" },
-    { weak: "very big", strong: "gigantic" },
-    { weak: "very small", strong: "microscopic" },
-    { weak: "very quiet", strong: "silent" },
-    { weak: "very loud", strong: "deafening" },
-    { weak: "very quick", strong: "rapid" },
-    { weak: "very slow", strong: "sluggish" },
-    { weak: "really big", strong: "massive" }
+    { weak: "very bad",    strong: "terrible"    },
+    { weak: "very good",   strong: "excellent"   },
+    { weak: "very happy",  strong: "ecstatic"    },
+    { weak: "very sad",    strong: "devastated"  },
+    { weak: "very angry",  strong: "furious"     },
+    { weak: "very cold",   strong: "freezing"    },
+    { weak: "very hot",    strong: "scorching"   },
+    { weak: "very big",    strong: "gigantic"    },
+    { weak: "very small",  strong: "microscopic" },
+    { weak: "very quiet",  strong: "silent"      },
+    { weak: "very loud",   strong: "deafening"   },
+    { weak: "very quick",  strong: "rapid"       },
+    { weak: "very slow",   strong: "sluggish"    },
+    { weak: "really big",  strong: "massive"     },
   ];
 
   let weakVocabIndex = 0;
@@ -126,13 +221,13 @@ const analyzeStory = async (content: string) => {
         title: "Stronger Vocabulary Suggestion",
         description: `Consider replacing the weak modifier '${matches[0]}' with the stronger, more descriptive word '${strong}'.`,
         originalText: matches[0],
-        suggestedText: strong
+        suggestedText: strong,
       });
     }
   });
 
   // 3. Flag very long paragraphs
-  const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+  const paragraphs = content.split(/\n\s*\n/).filter((p) => p.trim().length > 0);
   let longParaIndex = 0;
   paragraphs.forEach((para, index) => {
     const paraWords = para.split(/\s+/).filter(Boolean);
@@ -163,14 +258,17 @@ const analyzeStory = async (content: string) => {
         title: "Very Long Paragraph",
         description: `Paragraph ${index + 1} contains ${paraWords.length} words. Splitting it will make it easier to read and improve page flow.`,
         originalText: para,
-        suggestedText
+        suggestedText,
       });
     }
   });
 
   // 4. Flag very long sentences
   let longSentenceIndex = 0;
-  const allSentences = content.split(/(?<=[.!?])\s+/).filter(s => s.trim().length > 0);
+  const allSentences = content
+    .split(/(?<=[.!?])\s+/)
+    .filter((s) => s.trim().length > 0);
+
   allSentences.forEach((sentence) => {
     const sentenceWords = sentence.split(/\s+/).filter(Boolean);
     if (sentenceWords.length > 25) {
@@ -182,13 +280,13 @@ const analyzeStory = async (content: string) => {
           if (parts.length === 2) {
             const firstPart = parts[0].trim();
             const secondPart = parts[1].trim();
-            const capitalizedSecondPart = secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
-            
-            if (conj === " because ") {
-              suggestedText = `${firstPart}. This is because ${secondPart}`;
-            } else {
-              suggestedText = `${firstPart}. ${capitalizedSecondPart}`;
-            }
+            const capitalizedSecondPart =
+              secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
+
+            suggestedText =
+              conj === " because "
+                ? `${firstPart}. This is because ${secondPart}`
+                : `${firstPart}. ${capitalizedSecondPart}`;
             break;
           }
         }
@@ -200,7 +298,7 @@ const analyzeStory = async (content: string) => {
         title: "Long Sentence",
         description: `This sentence is very long (${sentenceWords.length} words). Consider breaking it down to keep your readers engaged.`,
         originalText: sentence,
-        suggestedText
+        suggestedText,
       });
     }
   });
@@ -212,14 +310,15 @@ const analyzeStory = async (content: string) => {
     dialogueCount++;
   }
 
-  const speechTags = ["said", "asked", "replied", "whispered", "shouted", "called", "exclaimed", "shrieked", "muttered", "murmured"];
+  const speechTags = [
+    "said", "asked", "replied", "whispered", "shouted", "called",
+    "exclaimed", "shrieked", "muttered", "murmured",
+  ];
   let speechTagsCount = 0;
-  speechTags.forEach(tag => {
+  speechTags.forEach((tag) => {
     const regex = new RegExp(`\\b${tag}\\b`, "gi");
     const matches = content.match(regex);
-    if (matches) {
-      speechTagsCount += matches.length;
-    }
+    if (matches) speechTagsCount += matches.length;
   });
 
   if (dialogueCount > 3 && speechTagsCount < dialogueCount / 2) {
@@ -227,17 +326,22 @@ const analyzeStory = async (content: string) => {
       id: generateId("dialogue_context", 1),
       category: "Dialogue",
       title: "Add Speech Tags or Action Beats",
-      description: "You have several dialogue sections, but few speech tags (e.g. 'he said', 'she replied'). Consider adding tags or action beats to clarify who is speaking and convey their emotions."
+      description:
+        "You have several dialogue sections, but few speech tags (e.g. 'he said', 'she replied'). Consider adding tags or action beats to clarify who is speaking and convey their emotions.",
     });
   }
 
   // 6. Pacing inconsistencies
   if (paragraphs.length >= 3) {
-    const lengths = paragraphs.map(p => p.split(/\s+/).filter(Boolean).length);
+    const lengths = paragraphs.map(
+      (p) => p.split(/\s+/).filter(Boolean).length
+    );
     const totalLength = lengths.reduce((a, b) => a + b, 0);
     const avgLength = totalLength / lengths.length;
-    
-    const variance = lengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) / lengths.length;
+
+    const variance =
+      lengths.reduce((sum, len) => sum + Math.pow(len - avgLength, 2), 0) /
+      lengths.length;
     const stdDev = Math.sqrt(variance);
 
     if (avgLength > 80 && stdDev < 15) {
@@ -245,7 +349,8 @@ const analyzeStory = async (content: string) => {
         id: generateId("pacing_monotony", 1),
         category: "Pacing",
         title: "Monotonous Paragraph Length",
-        description: "Most of your paragraphs are similarly long. Try breaking up some paragraphs or introducing shorter, punchier sentences to create a more dynamic pacing."
+        description:
+          "Most of your paragraphs are similarly long. Try breaking up some paragraphs or introducing shorter, punchier sentences to create a more dynamic pacing.",
       });
     }
 
@@ -257,7 +362,9 @@ const analyzeStory = async (content: string) => {
           id: generateId("pacing_abrupt", abruptShiftIndex++),
           category: "Pacing",
           title: "Abrupt Pacing Shift",
-          description: `Paragraph ${i + 1} (${lengths[i]} words) is followed by a paragraph of extremely different length (${lengths[i + 1]} words). Easing the transition can help maintain narrative flow.`
+          description: `Paragraph ${i + 1} (${lengths[i]} words) is followed by a paragraph of extremely different length (${
+            lengths[i + 1]
+          } words). Easing the transition can help maintain narrative flow.`,
         });
         break;
       }
@@ -267,8 +374,9 @@ const analyzeStory = async (content: string) => {
   return { suggestions };
 };
 
+// ─── Exports ───────────────────────────────────────────────────────────────────
+
 export const AnalysisService = {
   getDashboardAnalysis,
   analyzeStory,
 };
-

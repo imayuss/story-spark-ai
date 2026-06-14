@@ -26,7 +26,7 @@ const ScrollToTopButton = () => {
       style={{
         position: "fixed",
         bottom: "6rem",
-        right: "1.5rem",
+        left: "6rem",
         width: "56px",
         height: "56px",
         borderRadius: "50%",
@@ -43,7 +43,7 @@ const ScrollToTopButton = () => {
         pointerEvents: isVisible ? "auto" : "none",
         transform: isVisible ? "translateY(0)" : "translateY(12px)",
         transition: "opacity 0.3s ease, transform 0.3s ease",
-        zIndex: 9999,
+        zIndex: 9980,
       }}
     >
       ↑

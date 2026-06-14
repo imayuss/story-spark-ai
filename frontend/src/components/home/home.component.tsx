@@ -11,7 +11,6 @@ import WriterFeedbackComponent from "./writer_feedback/writer_feedback.component
 import StartWritingComponent from "./start_writing/start_writing.component";
 import PersonalizedRecommendationsComponent from "./personalized_recommendations/personalized_recommendations.component";
 import { isLoggedIn } from "../../services/auth.service";
-import BackToTop from "../ScrollToTopButton";
 
 const HomeComponent = () => {
   const isLogin = isLoggedIn();
