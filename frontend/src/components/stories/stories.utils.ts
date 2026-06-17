@@ -150,3 +150,5 @@ export const prompts = [
     prompt: "A time traveler finds themselves stuck in the age of dinosaurs.",
   },
 ];
+
+export const TEMPLATE_STORY_UUID = "test-1";

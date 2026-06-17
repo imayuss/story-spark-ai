@@ -3,7 +3,7 @@ import StoriesViewComponent, { IStories } from "./stories.view.component";
 import RecentPromptsPanel from "./RecentPromptsPanel";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { getUserInfo, isLoggedIn } from "../../services/auth.service";
-import { getRequestLimit, getWordCount, prompts } from "./stories.utils";
+import { getRequestLimit, getWordCount, prompts, TEMPLATE_STORY_UUID } from "./stories.utils";
 import {
   useGenerateFreeModelMutation,
   useGenerateModelMutation,
