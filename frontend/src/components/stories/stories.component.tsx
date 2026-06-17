@@ -1668,10 +1668,36 @@ if (isLoading) {
                       value={textareaValue}
                       maxLength={MAX_PROMPT_LENGTH}
                       onChange={(e) => setTextareaValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
+onKeyDown={(e) => {
+                        // Keep existing behavior: Enter -> next step (unless Shift is held)
+                        if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
                           e.preventDefault();
                           handleNextStep();
+                          return;
+                        }
+
+                        // Ctrl/Cmd + Enter -> generate story (only when prompt editor is focused)
+                        const isMac =
+                          typeof navigator !== "undefined" &&
+                          navigator.platform.toUpperCase().includes("MAC");
+                        const shouldTrigger = isMac ? e.metaKey : e.ctrlKey;
+
+                        if (
+                          e.key === "Enter" &&
+                          shouldTrigger &&
+                          !e.shiftKey &&
+                          !loading &&
+                          !isOverLimit &&
+                          textareaValue.trim().length > 0
+                        ) {
+                          e.preventDefault();
+
+                          // Prevent duplicate requests while generation is already in progress
+                          if (isGenerationInProgressRef.current) return;
+
+                          // Reuse the same generation flow as clicking the Generate button
+                          const form = e.currentTarget.closest("form");
+                          form?.requestSubmit();
                         }
                       }}
                     />
@@ -1695,15 +1721,16 @@ if (isLoading) {
                           <i className="fa-solid fa-xmark"></i>
                         </button>
                       </span>
-                    ))}
-                  </>
-                ) : (
-                  <p className="text-gray-400">
-                    No topics available. Please generate a story first.
-                  </p>
-                )}
-              </div>
-            </div>
+                    </div>
+                  </div>
+
+                  <div className="text-[11px] font-medium leading-relaxed text-slate-400 dark:text-slate-500 select-none w-full box-border">
+                    💡 <span className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mr-1">{text.keyboardTip}</span>
+                    {text.press} <kbd className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-md text-slate-700 dark:text-slate-300 mx-0.5 shadow-sm">Enter</kbd> to continue &bull;{" "}
+                    Press <kbd className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-md text-slate-700 dark:text-slate-300 mx-0.5 shadow-sm">{typeof navigator !== "undefined" && navigator.platform.toUpperCase().includes("MAC") ? "Cmd" : "Ctrl"} + Enter</kbd> to generate &bull;{" "}
+                    <kbd className="px-1.5 py-0.5 text-[10px] font-bold bg-slate-100 dark:bg-white/10 border border-slate-200 dark:border-white/10 rounded-md text-slate-700 dark:text-slate-300 mx-0.5 shadow-sm">Shift + Enter</kbd> {text.forNewLine}
+                  </div>
+
 
                   <div className="flex justify-end pt-2 w-full box-border">
                     <button
