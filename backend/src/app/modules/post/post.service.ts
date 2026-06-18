@@ -127,8 +127,6 @@ const createPost = async (payload: IPostPayload, token: ITokenPayload) => {
       if (updatedUser && updatedUser.postsCount === 1) {
         GamificationService.awardBadge(String(user._id), "First Story").catch(console.error);
       }
-     
-      WritingStreakService.updateStreakAndUnlocks(String(user._id)).catch(console.error);
     }
     return res;
   } catch (error) {
