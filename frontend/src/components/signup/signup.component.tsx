@@ -152,35 +152,45 @@ const otpPayload = {
   };
 
   const handleOtpValidation = async () => {
-    const enteredOtp = otp?.trim();
-    if (!enteredOtp) { toast.error("Please enter OTP"); return; }
-    if (!registerInfo) { toast.error("Something went wrong. Please restart the process."); return; }
-    if (Date.now() > expiredAt) { toast.error("OTP expired. Please request a new one."); return; }
+  const enteredOtp = otp?.trim();
+  if (!enteredOtp) { toast.error("Please enter OTP"); return; }
+  if (!registerInfo) { toast.error("Something went wrong. Please restart the process."); return; }
+  if (Date.now() > expiredAt) { toast.error("OTP expired. Please request a new one."); return; }
 
-    setIsBusy(true);
+  setIsBusy(true);
+  try {
+    const otpResponse = await verifyOtp({ email: registerInfo.email, otp: enteredOtp }).unwrap();
+
+    if (!otpResponse?.data?.verificationToken) {
+      throw new Error("No verification token received");
+    }
     try {
-      const otpResponse = await verifyOtp({ email: registerInfo.email, otp: enteredOtp }).unwrap();
-      if (otpResponse?.data?.verificationToken) {
-        const res = await registerUser({
-          ...registerInfo,
-          verificationToken: otpResponse.data.verificationToken,
-        }).unwrap();
-        if (res.data.accessToken) {
-          toast.success("OTP validated successfully!");
-          storeUserInfo({ accessToken: res.data.accessToken });
-          navigate("/");
-        }
-      } else {
-        throw new Error("No verification token received");
+      const res = await registerUser({
+        ...registerInfo,
+        verificationToken: otpResponse.data.verificationToken,
+      }).unwrap();
+
+      if (res.data.accessToken) {
+        toast.success("OTP validated successfully!");
+        storeUserInfo({ accessToken: res.data.accessToken });
+        navigate("/");
       }
-    } catch (err: unknown) {
-      const e = err as { data?: Array<{ message?: string }>; message?: string };
-      const message = e?.data?.[0]?.message || e?.message || "OTP verification failed.";
+    } catch (registerErr: unknown) {
+      const e = registerErr as { data?: Array<{ message?: string }>; message?: string };
+      const message = e?.data?.[0]?.message || e?.message || "Registration failed after OTP verification.";
       toast.error(message);
-    } finally {
-      setIsBusy(false);
+      console.log("registerUser error:", e);
+      return;
     }
   };
+  } catch (err: unknown) {
+    const e = err as { data?: Array<{ message?: string }>; message?: string };
+    const message = e?.data?.[0]?.message || e?.message || "OTP verification failed.";
+    toast.error(message);
+  } finally {
+    setIsBusy(false);
+  }
+};
 
   const handleResendOtp = async () => {
     if (cooldown > 0 || isBusy) return;
@@ -300,7 +310,6 @@ const otpPayload = {
       setValue("confirmPassword", registerInfo.password);
     }
   }, [showOtpField, registerInfo, setValue]);
-
   return (
     <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 px-4 py-8 sm:py-12 relative overflow-x-hidden text-slate-900 dark:text-slate-100 box-border">
 
@@ -318,24 +327,19 @@ const otpPayload = {
         </div>
 
 
-        {/* UPDATED: Structured layout classes to lock down maximum inner boundary constraints */}
-        <div className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl p-5 sm:p-8 shadow-2xl w-full min-w-0 overflow-hidden box-border">
-
-        <Link
-  to="/"
-  className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-slate-400 transition-colors duration-200 hover:text-blue-400"
->
-  <span>←</span>
-  <span>Back to Home</span>
-</Link>
-          <h3 className="text-center text-xl sm:text-2xl font-bold tracking-tight text-slate-200">
         {/* Card */}
         <div className="bg-white dark:bg-slate-800/60 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 sm:p-8 shadow-2xl w-full min-w-0 overflow-hidden box-border">
-
+          {/* Back to Home */}
+          <button
+            onClick={() => (window.location.href = "/")}
+            className="mb-4 text-sm text-blue-400 hover:text-blue-300 transition-colors duration-200 flex items-center gap-2 cursor-pointer"
+          >
+            ← Back to Home
+          </button>
           <h3 className="text-center text-xl sm:text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-200">
-
             {showOtpField ? "Verify Your Email" : "Create Account"}
           </h3>
+        
           {showOtpField && registerInfo && (
             <p className="mt-2 mb-4 text-center text-xs sm:text-sm text-slate-400 px-1">
               We sent a 6-digit code to{" "}
@@ -431,12 +435,14 @@ const otpPayload = {
                   </p>
                   <ul className="space-y-1.5 list-none p-0 m-0 w-full box-border text-[11px] font-medium">
                     {PASSWORD_REQUIREMENTS.map(({ key, label }) => {
-                      const met = passwordChecks[key];
-                      return (
-                          <span>{label}</span>
-                        </li>
-                      );
-                    })}
+  const met = passwordChecks[key];
+  return (
+    <li key={key} className={`flex items-center gap-1.5 ${met ? "text-green-500" : "text-slate-400"}`}>
+      <span>{met ? "✓" : "○"}</span>
+      <span>{label}</span>
+    </li>
+  );
+})}
                   </ul>
                 </div>
               )}
@@ -478,6 +484,7 @@ const otpPayload = {
                   validation={{
                     required: "Please enter OTP",
                     minLength: { value: 6, message: "OTP must be 6 digits" },
+                      setValueAs: (value: string) => value.replace(/\D/g, ""),
                     maxLength: { value: 6, message: "OTP must be 6 digits" },
                     pattern: { value: /^[0-9]{6}$/, message: "OTP must contain only numbers" },
                   }}
