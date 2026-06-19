@@ -2,28 +2,22 @@ import { Request, Response } from "express";
 import { generateStory } from "../services/ai.service";
 import sendResponse from "../shared/send_response";
 import { storyQueue } from "../services/storyRequestQueue";
+import {
+  safeParseAIResponse,
+  StoryBranchingResponseSchema,
+  type StoryBranchingResponse,
+} from "../app/modules/ai";
 
-const sanitizeJsonText = (rawText: string): string => {
-  const trimmed = rawText.trim();
-  if (!trimmed.startsWith("```")) {
-    return trimmed;
-  }
-  return trimmed
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-};
+const DEFAULT_CHOICES = [
+  "Explore the surroundings",
+  "Search for another way",
+  "Wait and see what happens",
+];
 
-const parseRawStoryText = (text: string) => {
-  return {
-    storySegment: text || "The story continues into the unknown...",
-    choices: [
-      "Explore the surroundings",
-      "Search for another way",
-      "Wait and see what happens"
-    ]
-  };
-};
+const buildFallback = (rawText: string): StoryBranchingResponse => ({
+  storySegment: rawText?.trim() || "The story continues into the unknown...",
+  choices: [...DEFAULT_CHOICES],
+});
 
 export const StoryBranchingController = {
   createBranchingStory: async (req: Request, res: Response) => {
@@ -56,47 +50,26 @@ Task:
 
       const result = await storyQueue.enqueue(() => generateStory(prompt));
 
-      let parsed: { storySegment: string; choices: string[] };
-      try {
-        const cleaned = sanitizeJsonText(result.story);
-        parsed = JSON.parse(cleaned);
+      const parsed = safeParseAIResponse(
+        result.story,
+        StoryBranchingResponseSchema,
+        buildFallback(result.story),
+        { label: "story branching" }
+      );
 
-        // Ensure storySegment and choices exist
-        if (!parsed.storySegment || !Array.isArray(parsed.choices)) {
-          throw new Error("Missing required fields in parsed JSON");
-        }
-      } catch (e) {
-        console.warn("[Branching] JSON parsing failed, attempting fallback parsing. Error:", e);
-
-        // Try regex-based extraction as a secondary backup
-        const jsonMatch = result.story.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          try {
-            parsed = JSON.parse(sanitizeJsonText(jsonMatch[0]));
-            if (!parsed.storySegment || !Array.isArray(parsed.choices)) {
-              throw new Error("Invalid structure inside regex match");
-            }
-          } catch (innerError) {
-            parsed = parseRawStoryText(result.story);
-          }
-        } else {
-          parsed = parseRawStoryText(result.story);
-        }
-      }
-
-      // Ensure we have exactly 3 choices
+      // Normalize choices to exactly 3
+      let choices: string[];
       if (!parsed.choices || parsed.choices.length === 0) {
-        parsed.choices = [
-          "Explore the surroundings",
-          "Search for another way",
-          "Wait and see what happens"
-        ];
+        choices = [...DEFAULT_CHOICES];
       } else if (parsed.choices.length < 3) {
-        while (parsed.choices.length < 3) {
-          parsed.choices.push(`Option ${parsed.choices.length + 1}`);
+        choices = [...parsed.choices];
+        while (choices.length < 3) {
+          choices.push(`Option ${choices.length + 1}`);
         }
       } else if (parsed.choices.length > 3) {
-        parsed.choices = parsed.choices.slice(0, 3);
+        choices = parsed.choices.slice(0, 3);
+      } else {
+        choices = parsed.choices;
       }
 
       sendResponse(res, {
@@ -105,7 +78,7 @@ Task:
         message: "Story generated successfully",
         data: {
           storySegment: parsed.storySegment,
-          choices: parsed.choices,
+          choices,
           segmentIndex,
         },
       });

@@ -15,6 +15,16 @@ import type {
   IStoryVisualizerPayload,
   IStoryVisualizerResult,
 } from "../story_visualizer/story_visualizer.interface";
+import {
+  safeParseAIResponse,
+  parseAIResponseOrThrow,
+  GeminiStoriesWrapperSchema,
+  AlternateEndingsArraySchema,
+  RemixResponseSchema,
+  ContinuationResponseSchema,
+  TranslationResponseSchema,
+  StoryboardResponseSchema,
+} from "../ai";
 
 const geminiApiKey = config.gemini_api_key?.trim() ?? "";
 const genAI = new GoogleGenerativeAI(geminiApiKey);
@@ -115,18 +125,6 @@ const throwIfAborted = (signal?: AbortSignal): void => {
   }
 };
 
-const sanitizeJsonText = (rawText: string): string => {
-  const trimmed = rawText.trim();
-  if (!trimmed.startsWith("```")) {
-    return trimmed;
-  }
-
-  return trimmed
-    .replace(/^```(?:json)?\s*/i, "")
-    .replace(/\s*```$/, "")
-    .trim();
-};
-
 const buildCharactersInstruction = (characters?: ICharacter[]): string => {
   if (!characters || characters.length === 0) return "";
   const charsString = characters
@@ -176,8 +174,12 @@ export async function generateWithGeminiStories(
     throwIfAborted(signal);
 
     const text = response.response.text();
-    const parsed = JSON.parse(sanitizeJsonText(text));
-    const stories: Story[] = Array.isArray(parsed) ? parsed : parsed?.stories;
+    const stories = safeParseAIResponse(
+      text,
+      GeminiStoriesWrapperSchema,
+      [] as Story[],
+      { label: "Gemini story generation" }
+    );
 
     if (!Array.isArray(stories) || stories.length === 0) {
       throw new ApiError(
@@ -279,42 +281,16 @@ export async function generateAlternateEndingsWithGemini(
     throwIfAborted(signal);
     const text = response.response.text();
 
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(sanitizeJsonText(text));
-    } catch (parseError: unknown) {
-      const parseErrorMsg =
-        parseError instanceof Error ? parseError.message : String(parseError);
-      throw new ApiError(
-        httpStatus.INTERNAL_SERVER_ERROR,
-        `Gemini returned invalid JSON for alternate endings: ${parseErrorMsg}`
-      );
-    }
-
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Invalid AI response: Expected a non-empty JSON array."
-      );
-    }
-
-    const isValid = parsed.every(
-      (item) =>
-        item &&
-        typeof item === "object" &&
-        typeof (item as Record<string, unknown>).style === "string" &&
-        typeof (item as Record<string, unknown>).ending === "string" &&
-        typeof (item as Record<string, unknown>).fullStory === "string"
+    const parsed = parseAIResponseOrThrow(
+      text,
+      AlternateEndingsArraySchema,
+      {
+        label: "Gemini alternate endings",
+        errorMessage: "Gemini returned invalid JSON for alternate endings",
+      }
     );
 
-    if (!isValid) {
-      throw new ApiError(
-        httpStatus.BAD_REQUEST,
-        "Invalid AI response: Alternate endings are malformed."
-      );
-    }
-
-    return parsed as IAlternateEnding[];
+    return parsed;
   } catch (error: unknown) {
     if (error instanceof ApiError) {
       throw error;
@@ -435,14 +411,11 @@ Write the remixed story in ${language}. Return a JSON object with this exact str
 
     const result = await chatSession.sendMessage(prompt, { signal });
     const rawText = result.response.text();
-    const cleanText = sanitizeJsonText(rawText);
-    const parsed = JSON.parse(cleanText);
 
-    if (!parsed.title || !parsed.content) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Invalid remix response from AI.");
-    }
-
-    return parsed;
+    return parseAIResponseOrThrow(rawText, RemixResponseSchema, {
+      label: "Gemini story remix",
+      errorMessage: "Invalid remix response from AI",
+    });
   } catch (error: unknown) {
     if (error instanceof ApiError) throw error;
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -489,25 +462,16 @@ Return only valid JSON with this exact structure:
 
     const text = response.response.text();
 
-    let parsed: any;
-    try {
-      parsed = JSON.parse(sanitizeJsonText(text));
-    } catch (parseError: unknown) {
-      const parseErrorMsg = parseError instanceof Error ? parseError.message : String(parseError);
-      throw new ApiError(
-        httpStatus.BAD_GATEWAY,
-        `Invalid AI response: failed to parse JSON (${parseErrorMsg})`
-      );
-    }
+    const parsed = parseAIResponseOrThrow(
+      text,
+      ContinuationResponseSchema,
+      {
+        label: "Gemini story continuation",
+        errorMessage: "Invalid AI response: failed to parse continuation JSON",
+      }
+    );
 
-    if (!parsed.continuation || typeof parsed.continuation !== "string") {
-      throw new ApiError(
-        httpStatus.BAD_GATEWAY,
-        "Invalid AI response: Expected a continuation string."
-      );
-    }
-
-    return { continuation: parsed.continuation };
+    return parsed;
   } catch (error: unknown) {
     if (error instanceof ApiError || error instanceof GenerationAbortedError) {
       throw error;
@@ -553,14 +517,11 @@ Preserve the story's tone, style and meaning. Only translate — do not modify t
 
     const result = await chatSession.sendMessage(prompt, { signal });
     const rawText = result.response.text();
-    const cleanText = sanitizeJsonText(rawText);
-    const parsed = JSON.parse(cleanText);
 
-    if (!parsed.title || !parsed.content) {
-      throw new ApiError(httpStatus.BAD_REQUEST, "Invalid translation response from AI.");
-    }
-
-    return parsed;
+    return parseAIResponseOrThrow(rawText, TranslationResponseSchema, {
+      label: "Gemini story translation",
+      errorMessage: "Invalid translation response from AI",
+    });
   } catch (error: unknown) {
     if (error instanceof ApiError) throw error;
     const errorMsg = error instanceof Error ? error.message : String(error);
@@ -621,43 +582,20 @@ Rules:
     });
 
     const result = await chatSession.sendMessage(prompt, { signal });
-    const parsed = JSON.parse(sanitizeJsonText(result.response.text()));
-
-    const scenes = parsed?.scenes;
-
-    if (!Array.isArray(scenes) || scenes.length < 4 || scenes.length > 8) {
-      throw new ApiError(
-        httpStatus.BAD_GATEWAY,
-        "Invalid AI response: Expected 4 to 8 storyboard scenes."
-      );
-    }
-
-    const normalizedScenes = scenes.map((scene: any, index: number) => {
-      if (
-        !scene ||
-        typeof scene !== "object" ||
-        typeof scene.caption !== "string" ||
-        typeof scene.imagePrompt !== "string"
-      ) {
-        throw new ApiError(
-          httpStatus.BAD_GATEWAY,
-          "Invalid AI response: Storyboard scenes are malformed."
-        );
+    const parsed = parseAIResponseOrThrow(
+      result.response.text(),
+      StoryboardResponseSchema,
+      {
+        label: "Gemini storyboard",
+        errorMessage: "Invalid storyboard response from AI",
       }
+    );
 
-      return {
-        sceneNumber: index + 1,
-        caption: scene.caption.trim(),
-        imagePrompt: scene.imagePrompt.trim(),
-      };
-    });
-
-    if (typeof parsed?.styleGuide !== "string" || !parsed.styleGuide.trim()) {
-      throw new ApiError(
-        httpStatus.BAD_GATEWAY,
-        "Invalid AI response: Style guide is missing."
-      );
-    }
+    const normalizedScenes = parsed.scenes.map((scene, index) => ({
+      sceneNumber: scene.sceneNumber ?? index + 1,
+      caption: scene.caption.trim(),
+      imagePrompt: scene.imagePrompt.trim(),
+    }));
 
     return {
       scenes: normalizedScenes,
