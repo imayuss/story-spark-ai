@@ -146,7 +146,7 @@ const CookieConsentBanner: FC<CookieConsentBannerProps> = ({ onLayoutChange }) =
         <h2 id="cookie-consent-title" className={`mt-1.5 text-xl font-bold tracking-tight sm:text-2xl ${primaryText}`}>
           Manage your cookie settings
         </h2>
-        <p className={`mt-2.5 text-sm leading-relaxed sm:text-base ${secondaryText}`}>
+        <p id="cookie-consent-description" className={`mt-2.5 text-sm leading-relaxed sm:text-base ${secondaryText}`}>
           StorySpark AI uses cookies to keep the experience secure and smooth. Select which cookie
           categories you want to allow, or accept all for the best experience.{" "}
           <Link
