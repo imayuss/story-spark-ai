@@ -92,6 +92,7 @@ const PaymentComponent = lazy(() =>
   }))
 );
 const SearchPageComponent = lazy(() => import("./pages/SearchPage"));
+const ChatPage = lazy(() => import("./components/chat/ChatPage"));
 
 const ALL_ROLES = [USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN, USER_ROLE.WRITER, USER_ROLE.USER];
 const ELEVATED_ADMIN_ROLES = [USER_ROLE.ADMIN, USER_ROLE.SUPER_ADMIN];
@@ -139,6 +140,7 @@ const router = createBrowserRouter([
       { path: "community", element: <CommunityComponent /> },
       { path: "report-bug", element: <ReportBug /> },
       { path: "search", element: lazyPage(<SearchPageComponent />) },
+      { path: "chat", element: lazyPage(<ChatPage />) },
       {
         element: <ProtectedRoute allowedRoles={ALL_ROLES} />,
         children: [
@@ -211,6 +213,7 @@ const router = createBrowserRouter([
           { path: "explore", element: lazyPage(<ExploreComponent />) },
           { path: "resources", element: <ResourcesListComponent /> },
           { path: "resources/:resourceName", element: <ResourceDetailComponent /> },
+          { path: "chat", element: lazyPage(<ChatPage />) },
 
           // Protected routes
           {
