@@ -12,6 +12,7 @@ import { useCreatePostMutation } from "../../redux/apis/post.api";
 import jsPDF from "jspdf";
 import StoryTranslator from "../translate/StoryTranslator";
 import StoryEndingGenerator from "./StoryEndingGenerator";
+import StoryImprovementSuggestions from "./StoryImprovementSuggestions";
 
 export interface IStories {
   uuid: string;
@@ -49,6 +50,7 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   const [createPost] = useCreatePostMutation();
   const [showGenreTransformation, setShowGenreTransformation] = useState<boolean>(false);
   const [showEndingGenerator, setShowEndingGenerator] = useState(false);
+  const [showImprovementPanel, setShowImprovementPanel] = useState(false);
 
   useEffect(() => {
     setSelectTopics(topics.filter((topic) => topic.selected));
@@ -313,6 +315,13 @@ const handleGenerateCharacterProfile = async () => {
                     </button>
                     <button
                       type="button"
+                      className="rounded-lg px-4 py-2 bg-yellow-600 text-white font-semibold hover:bg-yellow-500 transition-colors"
+                      onClick={() => setShowImprovementPanel(true)}
+                    >
+                      ✨ Improve
+                    </button>
+                    <button
+                      type="button"
                       className="rounded-lg px-4 py-2 bg-emerald-700 text-white font-semibold cursor-pointer hover:bg-emerald-600 transition-colors"
                       onClick={() => setShowTranslator(true)}
                     >
@@ -564,6 +573,15 @@ const handleGenerateCharacterProfile = async () => {
           onClose={() => setShowGenreTransformation(false)}
         />
       )}
+      {showImprovementPanel && selectedStory && (
+  <StoryImprovementSuggestions
+    story={{
+      title: selectedStory.title,
+      content: selectedStory.content,
+    }}
+    onClose={() => setShowImprovementPanel(false)}
+  />
+)}
       <Toaster position="top-right" reverseOrder={false} />
 
       {showTranslator && selectedStory && (
