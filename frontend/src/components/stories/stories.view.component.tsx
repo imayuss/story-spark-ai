@@ -270,7 +270,7 @@ const StoryRemixModal = React.lazy(() => import("../remix/StoryRemix"));
 const StoryWorldMapModal = React.lazy(() => import("../story-map/StoryWorldMap"));
 
 export const RelatedStoriesComponent: React.FC<IRelatedStoriesComponentProps> = ({ posts, currentPostId }) => {
-  const navigate = useNavigate();
+  const navigate = useNavigate();  // <--- ADD THIS LINE
   const filteredPosts = posts.filter((post) => post._id !== currentPostId);
 
   return (
@@ -294,7 +294,6 @@ export const RelatedStoriesComponent: React.FC<IRelatedStoriesComponentProps> = 
     </div>
   );
 };
-
 // ─── Main Component ─────────────────────────────────────────────────────────
 const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   stories,
@@ -304,7 +303,6 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
   onPublishSuccess,
 }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const audioPlayerRef = useRef<AudioPlayerHandle>(null);
   const { setError, clearError } = useApiError();
@@ -818,10 +816,15 @@ const StoriesViewComponent: React.FC<StoriesComponentProps> = ({
       const authorName = isLogin && profile?.name ? profile.name : "Anonymous";
       const isoDate = new Date().toISOString().split("T")[0];
 
-      const markdownContent = `---
-title: "${title.replace(/"/g, '\\"')}"
-tag: "${tag.replace(/"/g, '\\"')}"
-author: "${authorName.replace(/"/g, '\\"')}"
+     // Helper function to escape both backslashes and quotes
+const escapeMarkdown = (str: string) => {
+  return str.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+};
+
+const markdownContent = `---
+title: "${escapeMarkdown(title)}"
+tag: "${escapeMarkdown(tag)}"
+author: "${escapeMarkdown(authorName)}"
 date: "${isoDate}"
 ---
 

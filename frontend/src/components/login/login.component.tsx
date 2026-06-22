@@ -16,7 +16,6 @@ import RedirectComponent from "../redirect.component";
 
 import toast, { Toaster } from "react-hot-toast";
 import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
-import { WandSparkles, BookOpen, UsersRound } from "lucide-react";
 
 type Inputs = {
   email: string;
