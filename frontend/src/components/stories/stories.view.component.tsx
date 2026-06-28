@@ -1,13 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
+import {
+  getShortenedText,
+  ITopicData,
+  topicsData,
+  getWordCount,
+  SELECTED_TOPIC_CLASSES,
+} from "./stories.utils";
+import { calculateReadingTime } from "../../utils/reading-time";
+import { formatReadingStats } from "../../utils/story-utils";
 import CharacterProfileCard from "./CharacterProfileCard";
 import StoryGenreTransformation from "./StoryGenreTransformation";
 import StoryMoodDashboard from "./StoryMoodDashboard";
 import StoryTitleSuggestions from "./StoryTitleSuggestions";
 import StoryVersionHistory from "./StoryVersionHistory";
-import { CharacterProfile } from "./stories.utils";
-import React, { useEffect, useState, useRef, useMemo } from "react";
-import { getShortenedText, ITopicData, topicsData, getWordCount, SELECTED_TOPIC_CLASSES } from "./stories.utils";
-import { formatReadingStats } from "../../utils/story-utils";
+import toast, { Toaster } from "react-hot-toast";
+import { useCreatePostMutation } from "../../redux/apis/post.api";
+import jsPDF from "jspdf";
+import StoryTranslator from "./translate/StoryTranslator";
 import toast, { Toaster } from "react-hot-toast";
 import { useCreatePostMutation } from "../../redux/apis/post.api";
 import jsPDF from "jspdf";
@@ -211,20 +220,35 @@ const handleGenerateCharacterProfile = async () => {
     }
   };
 
-  if (!stories || stories.length === 0) {
-    return (
-      <div className="mt-16 px-4 sm:px-6 lg:px-8 pb-16 flex justify-center">
-        <div className="rounded-2xl border border-slate-700 bg-slate-800/40 p-8 sm:p-12 text-center text-slate-400 max-w-2xl w-full shadow-lg transition-all duration-500 ease-in-out mx-auto">
-          <div className="text-5xl mb-6 animate-pulse">✨</div>
-          <h3 className="text-2xl font-bold text-slate-200 tracking-wide">
-            Your AI-generated story will appear here
-          </h3>
-          <p className="mt-3 text-base text-slate-400">
-            Enter a creative prompt above and let StorySparkAI craft something magical.
-          </p>
-        </div>
+const isNarrationActive = narrationState !== "idle";
+
+if (isLoading) {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <StoryGeneratingAnimation />
+    </div>
+  );
+}
+
+if (!selectedStory) {
+  return null;
+}
+
+if (!stories || stories.length === 0) {
+  return (
+    <div className="mt-16 px-4 sm:px-6 lg:px-8 pb-16 flex justify-center">
+      <div className="rounded-2xl border border-slate-700 bg-slate-800/40 p-8 sm:p-12 text-center text-slate-400 max-w-2xl w-full shadow-lg transition-all duration-500 ease-in-out mx-auto">
+        <div className="text-5xl mb-6 animate-pulse">✨</div>
+        <h3 className="text-2xl font-bold text-slate-200 tracking-wide">
+          Your AI-generated story will appear here
+        </h3>
+        <p className="mt-3 text-base text-slate-400">
+          Enter a creative prompt above and let StorySparkAI craft something magical.
+        </p>
       </div>
-    );
+    </div>
+  );
+}
   }
 
   return (

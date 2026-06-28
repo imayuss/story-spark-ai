@@ -6,6 +6,9 @@ interface StoryGeneratorProps {
   onStoryGenerated?: (stories: any[]) => void;
 }
 
+const MIN_PROMPT_LENGTH = 10;
+const MAX_PROMPT_LENGTH = 1000;
+
 export const StoryGenerator: React.FC<StoryGeneratorProps> = ({ onStoryGenerated }) => {
   const [prompt, setPrompt] = useState('');
   const [variationCount, setVariationCount] = useState(3);
@@ -15,13 +18,21 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({ onStoryGenerated
 
   const abortContollerRef = useRef<AbortController | null>(null);
   const handleGenerate = async () => {
-    // Don't generate if no prompt
-    if (!prompt.trim()) {
+    if (!trimmedPrompt) {
       setError('Please enter a story prompt.');
       return;
     }
 
-    // Reset previous error
+    if (promptLength < MIN_PROMPT_LENGTH) {
+      setError(`Story prompt must be at least ${MIN_PROMPT_LENGTH} characters long.`);
+      return;
+    }
+
+    if (promptLength > MAX_PROMPT_LENGTH) {
+      setError(`Story prompt must be no more than ${MAX_PROMPT_LENGTH} characters long.`);
+      return;
+    }
+
     setError(null);
     setIsLoading(true);
 
@@ -32,14 +43,13 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({ onStoryGenerated
 
     try {
       const response = await api.post('/ai/generate', {
-        prompt: prompt.trim(),
+        prompt: trimmedPrompt,
         variations: variationCount,
       }, {
         signal: abortControlerRef.current.signal,
       });
       clearTimeout(timeoutld);
 
-      // ✅ Check if response has data
       if (response?.data?.variations) {
         setStories(response.data.variations);
         if (onStoryGenerated) {
@@ -48,11 +58,9 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({ onStoryGenerated
       } else {
         throw new Error('No variations received from AI service');
       }
-
     } catch (error: any) {
       console.error('AI Generation Error:', error);
 
-      // ✅ Handle different error types
       let errorMessage = 'Failed to generate stories. Please try again.';
 
       if (error.response?.status === 429) {
@@ -70,9 +78,7 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({ onStoryGenerated
       }
 
       setError(errorMessage);
-
     } finally {
-      // ✅ ALWAYS reset loading state
       setIsLoading(false);
     }
   };
@@ -117,8 +123,32 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({ onStoryGenerated
           placeholder="Enter your story prompt..."
           disabled={isLoading}
           rows={4}
+          minLength={MIN_PROMPT_LENGTH}
+          maxLength={MAX_PROMPT_LENGTH}
           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50"
         />
+
+        <div className="mt-1 flex justify-between text-sm">
+          <span
+            className={
+              promptLength > 0 && promptLength < MIN_PROMPT_LENGTH
+                ? 'text-red-600'
+                : 'text-gray-500'
+            }
+          >
+            Minimum {MIN_PROMPT_LENGTH} characters required
+          </span>
+
+          <span
+            className={
+              promptLength > MAX_PROMPT_LENGTH
+                ? 'text-red-600'
+                : 'text-gray-500'
+            }
+          >
+            {promptLength}/{MAX_PROMPT_LENGTH}
+          </span>
+        </div>
       </div>
 
       {/* Variation Count */}
@@ -141,7 +171,7 @@ export const StoryGenerator: React.FC<StoryGeneratorProps> = ({ onStoryGenerated
       {/* Generate Button */}
       <button
         onClick={handleGenerate}
-        disabled={isLoading || !prompt.trim()}
+        disabled={isLoading || isPromptInvalid}
         className="w-full px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
       >
         {isLoading ? (
