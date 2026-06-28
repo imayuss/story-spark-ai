@@ -197,7 +197,7 @@ const StoryInspirationComponent: React.FC = () => {
 
         {/* Stories Grid */}
         {filteredStories.length > 0 ? (
-          <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <motion.div layout className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 min-h-[75vh]">
             {filteredStories.map((story) => (
               <StoryInspirationCard key={story.id} story={story} />
             ))}
