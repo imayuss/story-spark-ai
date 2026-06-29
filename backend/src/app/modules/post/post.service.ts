@@ -529,9 +529,13 @@ const remixStory = async (postId: string, prompt: string, token: ITokenPayload) 
     throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
   }
 
-  const originalPost = await Post.findOne({ _id: postId, isDeleted: { $ne: true } });
+  const originalPost = await Post.findOne({
+    _id: postId,
+    isDeleted: { $ne: true },
+    $or: [{ isPublished: true }, { author: user._id }],
+  });
   if (!originalPost) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Original story post not found!");
+    throw new ApiError(httpStatus.NOT_FOUND, "Original story post not found or access denied!");
   }
 
   const remixedContent = `[AI Remixed Version based on prompt: "${safePrompt}"]\n\n${originalPost.content}`;
@@ -567,9 +571,13 @@ const translateStory = async (postId: string, language: string, token: ITokenPay
     throw new ApiError(httpStatus.BAD_REQUEST, "User not found!");
   }
 
-  const originalPost = await Post.findOne({ _id: postId, isDeleted: { $ne: true } });
+  const originalPost = await Post.findOne({
+    _id: postId,
+    isDeleted: { $ne: true },
+    $or: [{ isPublished: true }, { author: user._id }],
+  });
   if (!originalPost) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Original story post not found!");
+    throw new ApiError(httpStatus.NOT_FOUND, "Original story post not found or access denied!");
   }
 
   const translatedContent = `[Translated to ${safeLanguage}]\n\n${originalPost.content}`;
